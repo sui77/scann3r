@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scann3r</title>
+    <script src="/ws/socket.io.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-default.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+    <script src="/js/jquery.ui.touch-punch.min.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/feather-icons-web/feather.css">
+
+
+    <script type="module">
+
+
+        $(function () {
+
+            switchNav( location.hash ?? 'control');
+
+            var thumb = $('#thumb-template').clone();
+            $('#thumb-template').remove();
+
+            $.get('/config.json', null, (config) => {
+
+                if (config.rotor.invert) {
+                    $('#js-invert').attr('checked', true);
+                }
+
+                const sio = io({path: "/ws"});
+
+                let x = sio.emit('getProjects', 0, 10, (r) => {
+                    console.log("r", r);
+                    for (let n in r) {
+                        let t = thumb.clone();
+                        t.attr('id', 'foo');
+                        t.find('.thumbnail-image').attr('src', r[n].thumb);
+                        t.find('.thumbnail-text').text('#' + r[n].id);
+                        t.find('.zip').attr('href', '/' + r[n].id + '.zip');
+                        t.find('.trash').click( function() {
+                           alert('DEL ' + r[n].id);
+                        });
+                        t.find('.cloud').click( function() {
+                            sio.emit('proxy', r[n].id, (err, r) => {
+                                $('.proxy-url').html(r.url);
+
+                                $("#dialog-cloud").dialog(
+                                    {
+                                        width: 600,
+                                        height: 300
+                                    }
+                                );
+                            });
+                        });
+                        $('#thumbs').append(t);
+                    }
+                });
+
+                sio.on("snap-start", () => {
+                    $('#snapping').show();
+                });
+                sio.on("snap-done", (data) => {
+                    $('#snapping').hide();
+                    $('#myCam').attr('src', data);
+
+                    $('#myCamDate').html(new Date().toISOString());
+                });
+
+                sio.on("rotor-change", (data) => {
+                    $('.slider[data-slider=rotor]').slider('value', data);
+                });
+                sio.on("turntable-change", (data) => {
+                    $('.slider[data-slider=turntable]').slider('value', data);
+                });
+                sio.on("disableSlider", () => {
+                    $('.slider').slider('disable');
+                });
+                sio.on("enableSlider", () => {
+                    $('.slider').slider('enable');
+                });
+
+                let slideChange = (event, ui, name, conf, self, type) => {
+                    let decimals = conf.displayDecimals ?? 0;
+                    let uiVal = (ui.value * (conf.displayRange.max - conf.displayRange.min) / (conf.range.max - conf.range.min));
+                    uiVal = uiVal.toFixed(decimals);
+
+                    if (typeof ui.values != 'undefined') {
+                        let handle = $(self).find('span.ui-slider-handle').each(function (index) {
+                            let val = (ui.values[index] * (conf.displayRange.max - conf.displayRange.min) / (conf.range.max - conf.range.min));
+                            $(this).text(val.toFixed(decimals) + conf.displaySuffix);
+                        });
+                    } else {
+                        let handle = $(self).find('.ui-slider-handle');
+                        handle.text(uiVal + conf.displaySuffix);
+                    }
+
+                    if ($(self).data('slider') == 'rotor' || $(self).data('slider') == 'rotorAngleRangeToScan') {
+                        $('.os-preview-ring-preview').show();
+                        $('.os-preview-ring-preview').css('transform', 'rotate(' + uiVal + 'deg)');
+                    }
+                    if (typeof event.originalEvent != 'undefined') {
+                        let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
+                        sio.emit(name + '-' + type, value);
+                    }
+                    if (type == 'change') {
+                        $('.os-preview-ring-preview').hide();
+                        if (typeof event.originalEvent == 'undefined' && $(self).data('slider') == 'rotor') {
+                            $('.os-preview-ring').css('transform', 'rotate(' + uiVal + 'deg)');
+                        }
+                    }
+                }
+
+                $('.slider').each((n, el) => {
+                    let name = $(el).data('slider');
+                    let conf = getConfig(config, name);
+                    var self = this;
+                    $(el).slider({
+                        min: conf.range.min,
+                        max: conf.range.max,
+                        range: (typeof conf.values != 'undefined'),
+                        slide: function (event, ui) {
+                            slideChange(event, ui, name, conf, this, 'slide');
+                        },
+                        change: function (event, ui) {
+                            slideChange(event, ui, name, conf, this, 'change');
+                        },
+                    });
+                    if (typeof conf.values != 'undefined') {
+                        $(el).slider('values', conf.values);
+                    }
+                    if (typeof conf.value != 'undefined') {
+                        $(el).slider('value', conf.value);
+                    }
+                });
+
+                $('.js-start').click(() => {
+                    sio.emit('start');
+                });
+
+                $('.js-calibrate').click(() => {
+                    $("#dialog-calibrate").dialog();
+                });
+
+                $('.js-rotor-move').click(function () {
+                    sio.emit('rotorCalibrate', $(this).data('steps'));
+                });
+
+                $('.js-rotor-up').click(() => {
+                    sio.emit('rotorCalibrate', -100);
+                });
+
+                $('.js-rotor-down').click(() => {
+                    sio.emit('rotorCalibrate', 100);
+                });
+
+                $('#js-invert').change(() => {
+                    sio.emit('rotorCalibrateDirection', $('#js-invert').prop('checked'));
+                });
+
+                $('.js-calibrate-done').click(() => {
+                    sio.emit('rotorCalibrateSetHome');
+                    $("#calibrate").dialog('close');
+                });
+
+                $('.js-nav').click(function (e) {
+                    e.preventDefault();
+                    switchNav($(this).attr('href'));
+                });
+
+            });
+
+        });
+
+        function switchNav(hash) {
+            console.log(hash);
+                    $('.content').hide();
+                    $('#c-' + hash.replace('#', '') ).show();
+        }
+
+        function getConfig(config, key) {
+            let result = config;
+            let tmp = key.split('.');
+            for (let n in tmp) {
+                if (typeof result[tmp[n]] == 'undefined') {
+                    return null;
+                }
+                result = result[tmp[n]];
+            }
+            return result;
+        }
+    </script>
+    <style>
+
+    </style>
+</head>
+<body>
+
+<header style="margin-bottom:10px;border-bottom:solid 1px #ccc;">
+    <a href="#" class="logo">Scann3r</a>
+    <a href="#control" class="js-nav button">Control</a>
+    <a href="#browse" class="js-nav button">Browse</a>
+    <a href="#about" class="js-nav button">About</a>
+</header>
+
+<div class="container content" id="c-about">
+    <div class="row">
+        <div class="col-md-12 col-sm-12">
+        <div class='roundbox'>
+            <h1>About</h1>
+            <ul>
+                <li>Version: 0.1</li>
+                <li><a href="https://github.com/sui77/Scann3r">Scann3r @ github</a></li>
+                <li><a href="https://openscan.eu">OpenScan home</a></li>
+            </ul>
+        </div>
+        </div>
+    </div>
+</div>
+
+<div class="container content" id="c-browse">
+    <div class="row" id="thumbs">
+        <div id="thumb-template" class="thumbnail-box">
+            <div style="margin:auto">
+                <div style="margin:10px;">
+                    <img class="thumbnail-image" src="/img/preview640x480.png" style="width:180px;height:180px">
+                    <div class="thumbnail-text" style="width:108px;float:left;">asdf</div>
+                    <div style="width:60px;float:right;">
+                        <a class="trash"><i class="feather-trash-2"></i></a>
+                        <a class="cloud"><i class="feather-upload-cloud"></i></a>
+                        <a class="zip" href=""><i class="feather-download"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container content" id="c-control">
+    <div class="row">
+        <div class="col-md-6 col-sm-12">
+
+            <div class='roundbox'>
+                <h1>Scan</h1>
+                <div class="setting">
+                    <h2>Rotor angles per scan:</h2>
+                    <div class="slider" data-slider="rotorAnglesPerScan"></div>
+                </div>
+                <div class="setting">
+                    <h2>Rotor range to scan:</h2>
+                    <div class="slider" data-slider="rotorAngleRangeToScan"></div>
+                </div>
+                <div class="setting">
+                    <h2>Images per revision:</h2>
+                    <div class="slider" data-slider="imagesPerRevision"></div>
+                </div>
+                <button class="js-start">Start Scan <span id="scanInfo">(30 images)</span></button>
+            </div>
+
+            <div class="roundbox">
+                <h1>Control</h1>
+                <div class="os-preview-ring ring-rotor"></div>
+                <div class="os-preview-ring-preview" style="display:none"></div>
+                <div class="os-preview-base"></div>
+                <div style="margin-left:200px;min-height:180px;">
+
+                    <div class="setting">
+                        <h2>Light:</h2>
+                        <div class="slider" data-slider="light"></div>
+                    </div>
+                    <div class="setting">
+                        <h2>Rotor (<a class="js-calibrate" href="#">calibrate</a>):</h2>
+                        <div class="slider" data-slider="rotor"></div>
+                    </div>
+                    <div class="setting">
+                        <h2>Turntable:</h2>
+                        <div class="slider" data-slider="turntable"></div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <div class="col-md-6 col-sm-12">
+
+            <img id="myCam" src="/img/preview640x480.png" style="width:100%;border-radius:10px;">
+            <div style="position:absolute;font-size:12px;margin-top:-30px;margin-left:10px;height:20px;background-color:black;color:white;" id="myCamDate"></div>
+
+            <div class='roundbox'>
+                <h1>Camera Settings</h1>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="setting">
+                            <h2>Shutter</h2>
+                            <div class="slider" data-slider="cameraShutter"></div>
+                        </div>
+                        <div class="setting">
+                            <h2>Contrast</h2>
+                            <div class="slider" data-slider="cameraContrast"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="setting">
+                            <h2>Brightness</h2>
+                            <div class="slider" data-slider="cameraBrightness"></div>
+                        </div>
+                        <div class="setting">
+                            <h2>Saturation</h2>
+                            <div class="slider" data-slider="cameraSaturation"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div id="dialog-calibrate" title="Calibrate rotor" style="display:none">
+    <p>Move the rotor to the upper most position. Select "Invert Motor", if it moves to the wrong direction.</p>
+    <button class="js-rotor-move" data-steps="-13000">Move all UP</button>
+    <button class="js-rotor-move" data-steps="-100">Move UP</button>
+    <button class="js-rotor-down" data-steps="100">Move DOWN</button>
+    <br>
+    <input type="checkbox" id="js-invert"> Invert Motor
+    <hr size="1">
+    <button class="js-calibrate-done">Done</button>
+</div>
+
+<div id="dialog-cloud" title="Calibrate rotor" style="display:none">
+   The file is now available through this public URL:
+    <textarea class="proxy-url" style="border:solid 1px #ccc;width:90%; margin:3px; padding:5px;"></textarea>
+
+    <button onClick="$('.proxy-url').select();document.execCommand('copy')"><i class="feather-clipboard"></i> Copy URL to clipboard</button>
+    <a class="button" href="https://colab.research.google.com/github/sui77/Scann3r/blob/master/colab/Scann3rMeshroom.ipynb" target="_blank"><i class="feather-external-link"></i> Open Google Colab</a>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,88 @@
+.os-preview {
+    position:absolute;
+    padding-top:-100px;
+    width:200px;
+    height:200px;
+}
+.os-preview-ring {
+    background-image: url(/img/openScanMiniRing.png);
+    background-size: contain;
+    transform: rotate(45deg);
+    position:absolute;
+    width:200px;
+    height:200px;
+    margin-top:-40px;
+}
+
+
+
+.os-preview-ring-preview {
+    position:absolute;
+    background-image: url(/img/openScanMiniRingPreview.png);
+    background-size: contain;
+    transform: rotate(45deg);
+    width:200px;
+    height:200px;
+    margin-top:-40px;
+}
+
+.os-preview-base {
+    position:absolute;
+    background-image: url(/img/openScanMiniBase.png);
+    background-size: contain;
+    width:200px;
+    height:200px;
+    margin-top:-40px;
+}
+
+    .setting {
+        margin-bottom: 20px;
+    }
+
+    .roundbox {
+        border: solid 1px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .slider {
+        margin-left: 15px;
+        margin-right: 50px;
+    }
+
+    .ui-slider-handle {
+        width: 3em !important;
+        height: 1.6em !important;
+        top: 50% !important;
+        margin-top: -.8em !important;
+        text-align: center !important;
+        line-height: 1.6em !important;
+    }
+
+    h1 {
+        color: #666;
+        font-size:20px;
+        xfont-size: calc(0.8rem * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio));
+    }
+
+    h2 {
+        color: #666;
+        font-size:16px;
+        xfont-size: calc(0.3rem * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio));
+    }
+
+
+.content {
+    display:none;
+}
+#control {
+    display:block;
+}
+
+.thumbnail-box {
+            border-radius: 10px;
+    float:left; border: solid 1px #000;margin:10px;width:200px;height:225px;
+}
+.thumbnail-box img {
+            border-radius: 10px;
+}
