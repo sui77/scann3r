@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -12,22 +12,27 @@
     <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
     <script src="/js/jquery.ui.touch-punch.min.js"></script>
+    <script src="/js/odyniec-imgareaselect/jquery.imgareaselect.js"></script>
+    <link rel="stylesheet" href="/js/odyniec-imgareaselect/distfiles/css/imgareaselect-deprecated.css">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/feather-icons-web/feather.css">
 
 
-    <script type="module">
+    <script>
 
 
         $(function () {
 
-            switchNav( location.hash ?? 'control');
+
+
+
+
+            switchNav(location.hash == '' ? 'control' : location.hash);
 
             var thumb = $('#thumb-template').clone();
             $('#thumb-template').remove();
 
             $.get('/config.json', null, (config) => {
-
                 if (config.rotor.invert) {
                     $('#js-invert').attr('checked', true);
                 }
@@ -35,17 +40,16 @@
                 const sio = io({path: "/ws"});
 
                 let x = sio.emit('getProjects', 0, 10, (r) => {
-                    console.log("r", r);
                     for (let n in r) {
                         let t = thumb.clone();
                         t.attr('id', 'foo');
                         t.find('.thumbnail-image').attr('src', r[n].thumb);
                         t.find('.thumbnail-text').text('#' + r[n].id);
                         t.find('.zip').attr('href', '/' + r[n].id + '.zip');
-                        t.find('.trash').click( function() {
-                           alert('DEL ' + r[n].id);
+                        t.find('.trash').click(function () {
+                            alert('DEL ' + r[n].id);
                         });
-                        t.find('.cloud').click( function() {
+                        t.find('.cloud').click(function () {
                             sio.emit('proxy', r[n].id, (err, r) => {
                                 $('.proxy-url').html(r.url);
 
@@ -61,9 +65,6 @@
                     }
                 });
 
-                sio.on("snap-start", () => {
-                    $('#snapping').show();
-                });
                 sio.on("snap-done", (data) => {
                     $('#snapping').hide();
                     $('#myCam').attr('src', data);
@@ -71,17 +72,45 @@
                     $('#myCamDate').html(new Date().toISOString());
                 });
 
-                sio.on("rotor-change", (data) => {
-                    $('.slider[data-slider=rotor]').slider('value', data);
+                sio.on("slider-change", (name, value) => {
+                    if (typeof value == 'object') {
+                        $('.slider[data-slider=' + name + ']').slider('values', value);
+                    } else {
+                        $('.slider[data-slider=' + name + ']').slider('value', value);
+                    }
                 });
-                sio.on("turntable-change", (data) => {
-                    $('.slider[data-slider=turntable]').slider('value', data);
-                });
+
                 sio.on("disableSlider", () => {
                     $('.slider').slider('disable');
                 });
                 sio.on("enableSlider", () => {
                     $('.slider').slider('enable');
+                });
+
+                sio.on("imgArea", (data) => {
+                    console.log(data);
+                    let w = $('#myCam').width()/100;
+                    let h = $('#myCam').height()/100;
+                    console.log( data.x*w, data.y*h, data.x*w+data.width*w, data.y*h+data.height*h  );
+                    window.imgArea.setSelection( data.x*w, data.y*h, data.x*w+data.width*w, data.y*h+data.height*h )
+                    window.imgArea.update();
+                });
+
+                window.imgArea = $('#myCam').imgAreaSelect({
+                    instance: true,
+                    handles: true,
+                    onSelectEnd: function (img, selection) {
+                        console.log(selection);
+                        let xf = 100/img.width;
+                        let yf = 100/img.height;
+                        let relativeSelection = {x: selection.x1*xf, y: selection.y1*yf, width:selection.width*xf, height:selection.height*yf};
+                        console.log(relativeSelection);
+                        sio.emit('imgArea', relativeSelection);
+                        if (!selection.width || !selection.height) {
+                            return;
+                        }
+                        console.log(selection);
+                    }
                 });
 
                 let slideChange = (event, ui, name, conf, self, type) => {
@@ -90,27 +119,26 @@
                     uiVal = uiVal.toFixed(decimals);
 
                     if (typeof ui.values != 'undefined') {
-                        let handle = $(self).find('span.ui-slider-handle').each(function (index) {
+                        for (let index in ui.values) {
                             let val = (ui.values[index] * (conf.displayRange.max - conf.displayRange.min) / (conf.range.max - conf.range.min));
-                            $(this).text(val.toFixed(decimals) + conf.displaySuffix);
-                        });
+                            $('#val-' + name + '-' + index).text(val.toFixed(decimals) + conf.displaySuffix);
+                        }
                     } else {
-                        let handle = $(self).find('.ui-slider-handle');
-                        handle.text(uiVal + conf.displaySuffix);
+                        $('#val-' + name).text(uiVal + conf.displaySuffix + "(" + ui.value + ")");
                     }
 
                     if ($(self).data('slider') == 'rotor' || $(self).data('slider') == 'rotorAngleRangeToScan') {
-                        $('.os-preview-ring-preview').show();
-                        $('.os-preview-ring-preview').css('transform', 'rotate(' + uiVal + 'deg)');
+                        $('.os-ring-preview').show();
+                        $('.os-ring-preview').css('transform', 'rotate(' + uiVal + 'deg)');
                     }
                     if (typeof event.originalEvent != 'undefined') {
                         let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
-                        sio.emit(name + '-' + type, value);
+                        sio.emit('slider-' + type, name, value);
                     }
                     if (type == 'change') {
-                        $('.os-preview-ring-preview').hide();
+                        $('.os-ring-preview').hide();
                         if (typeof event.originalEvent == 'undefined' && $(self).data('slider') == 'rotor') {
-                            $('.os-preview-ring').css('transform', 'rotate(' + uiVal + 'deg)');
+                            $('.os-ring').css('transform', 'rotate(' + uiVal + 'deg)');
                         }
                     }
                 }
@@ -119,7 +147,7 @@
                     let name = $(el).data('slider');
                     let conf = getConfig(config, name);
                     var self = this;
-                    $(el).slider({
+                    var options = {
                         min: conf.range.min,
                         max: conf.range.max,
                         range: (typeof conf.values != 'undefined'),
@@ -129,9 +157,15 @@
                         change: function (event, ui) {
                             slideChange(event, ui, name, conf, this, 'change');
                         },
-                    });
+                    }
+                    if (typeof conf.steps != 'undefined') {
+                        options.step = conf.step;
+                    }
+                    $(el).slider(options);
                     if (typeof conf.values != 'undefined') {
+                        console.log( name, conf.values);
                         $(el).slider('values', conf.values);
+                        $('.slider[data-slider=rotorAngleRangeToScan]').slider('values', conf.values);
                     }
                     if (typeof conf.value != 'undefined') {
                         $(el).slider('value', conf.value);
@@ -143,7 +177,10 @@
                 });
 
                 $('.js-calibrate').click(() => {
-                    $("#dialog-calibrate").dialog();
+                    $("#dialog-calibrate").dialog({
+                        width: 500,
+                        height: 300
+                    });
                 });
 
                 $('.js-rotor-move').click(function () {
@@ -164,11 +201,14 @@
 
                 $('.js-calibrate-done').click(() => {
                     sio.emit('rotorCalibrateSetHome');
-                    $("#calibrate").dialog('close');
+                    $("#dialog-calibrate").dialog('close');
+                });
+
+                $('.js-turntable-sethome').click(()=> {
+                   sio.emit('turntableCalibrateSetHome');
                 });
 
                 $('.js-nav').click(function (e) {
-                    e.preventDefault();
                     switchNav($(this).attr('href'));
                 });
 
@@ -177,9 +217,8 @@
         });
 
         function switchNav(hash) {
-            console.log(hash);
-                    $('.content').hide();
-                    $('#c-' + hash.replace('#', '') ).show();
+            $('.content').hide();
+            $('#c-' + hash.replace('#', '')).show();
         }
 
         function getConfig(config, key) {
@@ -210,14 +249,14 @@
 <div class="container content" id="c-about">
     <div class="row">
         <div class="col-md-12 col-sm-12">
-        <div class='roundbox'>
-            <h1>About</h1>
-            <ul>
-                <li>Version: 0.1</li>
-                <li><a href="https://github.com/sui77/Scann3r">Scann3r @ github</a></li>
-                <li><a href="https://openscan.eu">OpenScan home</a></li>
-            </ul>
-        </div>
+            <div class='roundbox'>
+                <h1>About</h1>
+                <ul>
+                    <li>Version: 0.1</li>
+                    <li><a href="https://github.com/sui77/Scann3r">Scann3r @ github</a></li>
+                    <li><a href="https://openscan.eu">OpenScan home</a></li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>
@@ -247,37 +286,37 @@
             <div class='roundbox'>
                 <h1>Scan</h1>
                 <div class="setting">
-                    <h2>Rotor angles per scan:</h2>
+                    <h2>Rotor angles per scan: <span id="val-rotorAnglesPerScan"></span></h2>
                     <div class="slider" data-slider="rotorAnglesPerScan"></div>
                 </div>
                 <div class="setting">
-                    <h2>Rotor range to scan:</h2>
+                    <h2>Rotor range to scan: <span id="val-rotorAngleRangeToScan-0"></span>..<span id="val-rotorAngleRangeToScan-1"></span></h2>
                     <div class="slider" data-slider="rotorAngleRangeToScan"></div>
                 </div>
                 <div class="setting">
-                    <h2>Images per revision:</h2>
+                    <h2>Images per revision: <span id="val-imagesPerRevision"></span></h2>
                     <div class="slider" data-slider="imagesPerRevision"></div>
                 </div>
                 <button class="js-start">Start Scan <span id="scanInfo">(30 images)</span></button>
             </div>
 
             <div class="roundbox">
-                <h1>Control</h1>
-                <div class="os-preview-ring ring-rotor"></div>
-                <div class="os-preview-ring-preview" style="display:none"></div>
-                <div class="os-preview-base"></div>
+                <div style="position:absolute"><h1>Control</h1></div>
+                <div class="os-ring "></div>
+                <div class="os-ring-preview" style="display:none"></div>
+                <div class="os-base"></div>
                 <div style="margin-left:200px;min-height:180px;">
 
                     <div class="setting">
-                        <h2>Light:</h2>
+                        <h2>Light: <span id="val-light"></span></h2>
                         <div class="slider" data-slider="light"></div>
                     </div>
                     <div class="setting">
-                        <h2>Rotor (<a class="js-calibrate" href="#">calibrate</a>):</h2>
+                        <h2>Rotor (<a class="js-calibrate" href="javascript:">calibrate</a>): <span id="val-rotor"></span></h2>
                         <div class="slider" data-slider="rotor"></div>
                     </div>
                     <div class="setting">
-                        <h2>Turntable:</h2>
+                        <h2>Turntable (<a class="js-turntable-sethome" href="javascript:">set home</a>): <span id="val-turntable"></span></h2>
                         <div class="slider" data-slider="turntable"></div>
                     </div>
                 </div>
@@ -288,30 +327,30 @@
 
         <div class="col-md-6 col-sm-12">
 
-            <img id="myCam" src="/img/preview640x480.png" style="width:100%;border-radius:10px;">
-            <div style="position:absolute;font-size:12px;margin-top:-30px;margin-left:10px;height:20px;background-color:black;color:white;" id="myCamDate"></div>
+            <img id="myCam" src="/img/preview640x480.png" class="previewImage">
+            <div style="z-index:99;position:absolute;font-size:12px;margin-top:-30px;margin-left:10px;height:20px;background-color:black;color:white;" id="myCamDate"></div>
 
             <div class='roundbox'>
                 <h1>Camera Settings</h1>
                 <div class="row">
                     <div class="col-sm-6">
                         <div class="setting">
-                            <h2>Shutter</h2>
-                            <div class="slider" data-slider="cameraShutter"></div>
+                            <h2>Shutter: <span id="val-shutter"></span></h2>
+                            <div class="slider" data-slider="shutter"></div>
                         </div>
                         <div class="setting">
-                            <h2>Contrast</h2>
-                            <div class="slider" data-slider="cameraContrast"></div>
+                            <h2>Contrast: <span id="val-contrast"></span></h2>
+                            <div class="slider" data-slider="contrast"></div>
                         </div>
                     </div>
                     <div class="col-sm-6">
                         <div class="setting">
-                            <h2>Brightness</h2>
-                            <div class="slider" data-slider="cameraBrightness"></div>
+                            <h2>Brightness: <span id="val-brightness"></span></h2>
+                            <div class="slider" data-slider="brightness"></div>
                         </div>
                         <div class="setting">
-                            <h2>Saturation</h2>
-                            <div class="slider" data-slider="cameraSaturation"></div>
+                            <h2>Saturation: <span id="val-saturation"></span></h2>
+                            <div class="slider" data-slider="saturation"></div>
                         </div>
                     </div>
                 </div>
@@ -334,7 +373,7 @@
 </div>
 
 <div id="dialog-cloud" title="Calibrate rotor" style="display:none">
-   The file is now available through this public URL:
+    The file is now available through this public URL:
     <textarea class="proxy-url" style="border:solid 1px #ccc;width:90%; margin:3px; padding:5px;"></textarea>
 
     <button onClick="$('.proxy-url').select();document.execCommand('copy')"><i class="feather-clipboard"></i> Copy URL to clipboard</button>

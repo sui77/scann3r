@@ -15,15 +15,15 @@ class Scan {
         let rotorAngleRangeToScan = config.getConfig('rotorAngleRangeToScan', 'values');
         let rotorAnglesPerScan = config.getConfig('rotorAnglesPerScan', 'value');
         let imagesPerRevision = config.getConfig('imagesPerRevision', 'value');
-        let turntableRange = config.getConfig('turntable', 'range').max;
+        let turntableRange = config.getConfig('turntable', 'range').max-1;
 
         this.turntableRange = turntableRange;
 
         this.rotorStart = rotorAngleRangeToScan[0];
         this.rotorSteps = Math.floor((rotorAngleRangeToScan[1] - rotorAngleRangeToScan[0]) / rotorAnglesPerScan);
-        this.turntSteps = Math.floor(turntableRange / (imagesPerRevision + 1));
-        this.rotorNum = rotorAnglesPerScan;
-        this.turntNum = imagesPerRevision;
+        this.turntSteps = Math.floor(turntableRange / imagesPerRevision );
+        this.rotorNum = rotorAnglesPerScan-1;
+        this.turntNum = imagesPerRevision-1;
         this.rotorCurr = 0;
         this.turntCurr = 0;
     }
@@ -43,7 +43,7 @@ class Scan {
 
         await this.registry.get('rotor').turnTo(this.rotorStart);
         await this.registry.get('turntable').turnTo(0);
-        this.registry.get('camera').stopPreview();
+        await this.registry.get('camera').stopPreview();
         await this.next();
         this.registry.get('camera').startPreview();
         try {
@@ -87,23 +87,28 @@ class Scan {
     }
 
     async next() {
-        console.log([this.rotorCurr, this.turntCurr]);
+        console.log([this.rotorCurr, this.turntCurr, this.turntNum, this.rotorNum]);
         await sleep(500);
         await this.registry.get('camera').snap(this.directory + '/' + this.rotorCurr + '-' + this.turntCurr + '.jpg');
         await this.registry.get('camera').snapPreview();
 
-        if (this.turntCurr == this.turntNum - 1) {
+        this.turntCurr++;
+        if (this.turntCurr > this.turntNum) {
             this.rotorCurr++;
             this.turntCurr = 0;
             await this.registry.get('turntable').turnTo(this.turntableRange);
-            this.registry.get('turntable').setHome();
+
             if (this.rotorCurr > this.rotorNum) {
                 return;
             }
+            console.log('turn from ' + this.registry.get('turntable')._steps  + ' to ' + this.turntableRange);
+            await this.registry.get('turntable').turnTo(this.turntableRange);
+            console.log('turntable set 0');
+
+            this.registry.get('turntable').setHome();
             await this.registry.get('rotor').turnTo(this.rotorStart + this.rotorCurr * this.rotorSteps);
         }
 
-        this.turntCurr++;
         await this.registry.get('turntable').turnTo(this.turntCurr * this.turntSteps);
 
         return this.next();

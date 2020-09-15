@@ -1,5 +1,4 @@
 const NanoTimer = require('nanotimer');
-const Gpio = require('pigpio').Gpio;
 
 let enableTimeouts = {};
 let timeoutInterval = null;
@@ -8,7 +7,7 @@ class Stepper {
 
 
 
-    constructor(config) {
+    constructor(config, step, dir, enable) {
 
 
 
@@ -16,26 +15,29 @@ class Stepper {
 
         this._config = config;
         this._abort = false;
-        this._delay = 10;
-        console.log("STEPS", config.value);
         this._steps = config.value;
         this._targetSteps = 0;
         this._turning = false;
 
-        this._step = new Gpio(config.step, { mode: Gpio.OUTPUT });
-        this._dir = new Gpio(config.dir, { mode: Gpio.OUTPUT });;
-        this._step.digitalWrite(false);
-        this._dir.digitalWrite(false);
+        this._enablePin = enable._gpio;
 
-        if (config.enable) {
-            if (typeof enableTimeouts['e' + this._config.enable] == 'undefined') {
-                let gpio = new Gpio(this._config.enable, { mode: Gpio.OUTPUT });
-                enableTimeouts['e' + this._config.enable] = {
+        this._step = step;
+        this._dir = dir;
+        this._step.write(0);
+        this._dir.write(0);
+
+
+
+
+        if (enable !== null) {
+            let pin = enable._gpio;
+            if (typeof enableTimeouts['e' + this._enablePin] == 'undefined') {
+                enableTimeouts['e' + this._enablePin] = {
                     status: false,
                     ts: Math.floor(+new Date() / 1000),
-                    gpio: gpio
+                    gpio: enable
                 }
-                gpio.digitalWrite(true);
+                enable.write(1);
             }
             if (timeoutInterval == null) {
                 setInterval(this.autoToggleDisable, 1000);
@@ -44,37 +46,28 @@ class Stepper {
 
     }
 
-    get delay() {
-        return this._delay;
-    }
-
-    set delay(d) {
-        if (typeof d != 'number') throw `'delay' must be a number (${d})`;
-        if (d <= 0) throw `'delay' must be >= 0 (${d})`;
-        this._delay = d;
-    }
 
     get turning() {
         return this._turning;
     }
 
     autoToggleDisable() {
-        let to = Stepper.enableTimeouts;
+        let to = enableTimeouts;
         let now = Math.floor(+new Date() / 1000);
 
         for (let n in to) {
             if (to[n].status == true && to[n].ts < now - 60) {
-                to[n].gpio.digitalWrite(true);
+                to[n].gpio.write(1);
                 to[n].status = false;
             }
         }
     }
 
     autoToggleEnable() {
-        let to = enableTimeouts['e' + this._config.enable];
+        let to = enableTimeouts['e' + this._enablePin];
         let now = Math.floor(+new Date() / 1000);
         if (to.status == false) {
-            to.gpio.digitalWrite(false);
+            to.gpio.write(0);
             to.status = true;
         }
         to.ts = Math.floor(+new Date() / 1000);
@@ -90,10 +83,10 @@ class Stepper {
 
         if (this._steps > this._targetSteps) {
             this._steps--;
-            this._dir.digitalWrite( this._config.reverse?false:true );
+            this._dir.write( this._config.reverse?0:1 );
         } else if (this._steps < this._targetSteps) {
             this._steps++;
-            this._dir.digitalWrite( this._config.reverse?true:false );
+            this._dir.write( this._config.reverse?1:0 );
         } else {
             this._turning = false;
             this.onTurn(this._steps);
@@ -105,13 +98,13 @@ class Stepper {
             this.onTurn(this._steps);
         }
 
-        this._step.digitalWrite(true);
-        this._step.digitalWrite(false);
-
+        this._step.write(1);
          var timer = new NanoTimer();
-         timer.setTimeout(() => this._turn( res), [timer], '500u');
+        timer.setTimeout(() => {
+            this._step.write(0);
+            timer.setTimeout(() => this._turn( res), [timer], '500u');
+        }, [timer], '500u');
 
-//        setTimeout(() => this._turn( res), this._delay);
     }
 
     setHome() {
@@ -125,7 +118,6 @@ class Stepper {
     }
 
     turnBy(steps) {
-        console.log(steps);
         this._targetSteps += steps;
         return this.turn();
     }

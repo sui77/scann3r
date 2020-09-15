@@ -1,3 +1,5 @@
+const _ = require('lodash');
+
 class Config {
 
     constructor(configfile, registry) {
@@ -8,15 +10,18 @@ class Config {
     async loadValues() {
         let r = this.registry.get('redis');
         let data = await r.hgetall('values');
+
         for (let n in data) {
             let key = n.split('.');
-            if (typeof this.data[key[0]][key[1]] != 'undefined') {
+            console.log(key);
+            if (_.has(this.data, key[0]) && _.has(this.data[key[0]], key[1])) {
                 this.data[key[0]][key[1]] = JSON.parse(data[n]);
             }
         }
     }
 
     getConfig(key, subkey) {
+        return _.get(this.data, key + '.' + subkey, null);
         return this.data[key][subkey];
     }
 
