@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const fs = require('fs');
 
 class Config {
 
@@ -18,6 +19,9 @@ class Config {
                 this.data[key[0]][key[1]] = JSON.parse(data[n]);
             }
         }
+        let file = JSON.parse(fs.readFileSync('./package.json').toString());
+        this.data.version = file.version;
+        console.log(file);
     }
 
     getConfig(key, subkey) {

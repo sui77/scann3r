@@ -21,7 +21,7 @@
 .imgareaselect-border1, .imgareaselect-border2,
 .imgareaselect-border3, .imgareaselect-border4 {
     filter: alpha(opacity=50);
-    opacity: 0.5;
+    opacity: 1;
 }
 
 .imgareaselect-handle {

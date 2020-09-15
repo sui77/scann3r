@@ -13,7 +13,7 @@
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
     <script src="/js/jquery.ui.touch-punch.min.js"></script>
     <script src="/js/odyniec-imgareaselect/jquery.imgareaselect.js"></script>
-    <link rel="stylesheet" href="/js/odyniec-imgareaselect/distfiles/css/imgareaselect-deprecated.css">
+    <link rel="stylesheet" href="/js/odyniec-imgareaselect/distfiles/css/imgareaselect-default.css">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/feather-icons-web/feather.css">
 
@@ -36,6 +36,7 @@
                 if (config.rotor.invert) {
                     $('#js-invert').attr('checked', true);
                 }
+                $('.js-version').text(config.version);
 
                 const sio = io({path: "/ws"});
 
@@ -252,7 +253,7 @@
             <div class='roundbox'>
                 <h1>About</h1>
                 <ul>
-                    <li>Version: 0.1</li>
+                    <li>Version: <span class="js-version">unknown</span></li>
                     <li><a href="https://github.com/sui77/Scann3r">Scann3r @ github</a></li>
                     <li><a href="https://openscan.eu">OpenScan home</a></li>
                 </ul>
