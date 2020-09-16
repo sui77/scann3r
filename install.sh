@@ -11,4 +11,4 @@ sudo apt update && apt install -y zip git nodejs npm pigpio redis-server imagema
 
 git clone https://github.com/sui77/scann3r.git
 cd scann3r
-./update.sh
+./update.sh latest
