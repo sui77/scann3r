@@ -6,10 +6,18 @@ const Registry = require('./lib/Registry.js');
 const Config = require('./lib/Config.js');
 const Redis = require('async-redis');
 const Gpio = require('onoff').Gpio;
+const path = require('path');
+const fs = require('fs');
 
 const log = require('bunyan').createLogger({name: 'Main'});
 
 let gpio = {};
+
+let configfile = path.join(__dirname, '/../config.js');
+if (!fs.existsSync(configfile)) {
+    log.info('config.js not found, copying from config.dist.js');
+    fs.copyFileSync(path.join(__dirname, '/../config.dist.js'), configfile);
+}
 
 
 (async () => {
