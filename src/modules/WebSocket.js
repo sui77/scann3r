@@ -83,18 +83,20 @@ class WebSocket {
             log.info(`Client connected from ${socket.handshake.address}`);
             this.registry.get('camera').startPreview();
 
+            for (let slider in this.sliderAction) {
+                let options = this.config.get(slider);
+                socket.emit('initSlider', slider, options);
+            }
+
+            console.log(this.config.get('crop.values'));
+            socket.emit('imgArea', this.config.get('crop.values'));
+
             socket.on('disconnect', () => {
                 log.info(`Client disconnected from ${socket.handshake.address}`);
                 if (this.io.engine.clientsCount == 0) {
                     this.registry.get('camera').stopPreview();
                 }
             });
-
-            for (let slider in this.sliderAction) {
-                let options = this.config.get(slider);
-                socket.emit('initSlider', slider, options);
-            }
-
 
             socket.on('proxy', async (id, cb) => {
                 let proxyClient = new ProxyClient(this.registry, this.config.get('misc.projectsFolder') + '/' + id + '/images.zip');
@@ -126,8 +128,15 @@ class WebSocket {
             });
 
             socket.on('start', async () => {
+                this.registry.set('abort', false);
                 let scan = new Scan(this.registry, this.io);
                 scan.start();
+            });
+
+            socket.on('abort', async () => {
+                console.log('ABORT');
+                this.registry.set('abort', true);
+                this.io.emit('info', 'currentAction', 'Aborting...');
             });
 
             socket.on('delete', async (id, cb) => {

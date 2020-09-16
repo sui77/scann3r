@@ -1,3 +1,4 @@
 /node_modules
 /.idea
 /projects/*.zip
+x/config.js

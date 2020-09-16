@@ -6,6 +6,7 @@ const config = {
     },
     proxy: {
         url: 'ws://mc.sui.li:807',
+        enabled: false,
     },
     misc: {
         projectsFolder: path.join(__dirname, '/projects'),

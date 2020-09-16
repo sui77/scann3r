@@ -1,83 +1,149 @@
-.os-dpreview {
-    position:absolute;
-    padding-top:-100px;
-    width:200px;
-    height:200px;
+header {
+    margin-bottom: 10px;
+    border-bottom: solid 1px #ccc;
 }
+
+.os-dpreview {
+    position: absolute;
+    padding-top: -100px;
+    width: 200px;
+    height: 200px;
+}
+
 .os-ring {
     background-image: url(/img/openScanMiniRing.png);
     background-size: contain;
     transform: rotate(45deg);
-    position:absolute;
-    width:200px;
-    height:200px;
-    margin-top:10px;
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    margin-top: 10px;
 }
 
 .os-ring-preview {
-    position:absolute;
+    display: none;
+    position: absolute;
     background-image: url(/img/openScanMiniRingPreview.png);
     background-size: contain;
     transform: rotate(45deg);
-    width:200px;
-    height:200px;
-    margin-top:10px;
+    width: 200px;
+    height: 200px;
+    margin-top: 10px;
 }
 
 .os-base {
-    position:absolute;
+    position: absolute;
     background-image: url(/img/openScanMiniBase.png);
     background-size: contain;
-    width:200px;
-    height:200px;
-    margin-top:10px;
+    width: 200px;
+    height: 200px;
+    margin-top: 10px;
 }
 
-    .setting {
-        margin-bottom: 20px;
-    }
+.setting {
+    margin-bottom: 20px;
+}
 
-    .roundbox {
-        border: solid 1px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
+.roundbox {
+    border: solid 1px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
 
-    .slider {
-        margin-left: 15px;
-        margin-right: 15px;
-    }
+.control-box {
+    margin-left: 200px;
+    min-height: 180px;
+}
 
-    .previewImage, .imgareaselect-outer {
-        width:100%;
-        border-radius:10px;
-    }
+.slider {
+    margin-left: 15px;
+    margin-right: 15px;
+}
 
+#myCam, .imgareaselect-outer {
+    width: 100%;
+    border-radius: 10px;
+}
 
-    h1 {
-        color: #666;
-        font-size:20px;
-        xfont-size: calc(0.8rem * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio));
-    }
+h1 {
+    color: #666;
+    font-size: 20px;
+    xfont-size: calc(0.8rem * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio));
+}
 
-    h2 {
-        color: #666;
-        font-size:16px;
-        xfont-size: calc(0.3rem * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio));
-    }
-
+h2 {
+    color: #666;
+    font-size: 16px;
+    xfont-size: calc(0.3rem * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio) * var(--heading-ratio));
+}
 
 .content {
-    display:none;
+    display: none;
 }
+
 #control {
-    display:block;
+    display: block;
 }
 
 .thumbnail-box {
-            border-radius: 10px;
-    float:left; border: solid 1px #000;margin:10px;width:200px;height:225px;
+    border-radius: 10px;
+    float: left;
+    border: solid 1px #000;
+    margin: 10px;
+    width: 200px;
+    height: 225px;
 }
+
 .thumbnail-box img {
-            border-radius: 10px;
+    border-radius: 10px;
+    width: 180px;
+    height: 180px
+}
+
+.thumbnail-box .thumbnail-text {
+    width: 108px;
+    float: left;
+}
+
+.thumbnail-outer {
+    margin: 10px;
+}
+
+.thumbnail-icons {
+    width: 60px;
+    float: right;
+}
+
+i {
+    cursor: pointer;
+}
+
+.position-absolute {
+    position: absolute;
+}
+
+#myCamDate {
+    z-index: 99;
+    position: absolute;
+    font-size: 12px;
+    margin-top: -30px;
+    margin-left: 10px;
+    height: 20px;
+    background-color: black;
+    color: white;
+}
+
+.dialog {
+    display: none;
+}
+
+#dialog-cloud textarea {
+    border: solid 1px #ccc;
+    width: 95%;
+    margin: 3px;
+    padding: 5px;
+}
+
+.js-abort {
+    display:none;
 }
