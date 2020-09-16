@@ -20,7 +20,7 @@ class WebServer {
         let port = registry.get('config').get('webserver.port');
 
         this.server = http.createServer(function (req, res) {
-                log.info(req.method + ' ' + req.url);
+                //log.info(req.method + ' ' + req.url);
                 let file = '' + req.url.replace(/\?.*$/, '');
 
                 if (file == '' || file.match(/\/$/)) {

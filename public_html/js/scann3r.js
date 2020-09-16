@@ -24,13 +24,15 @@ var Scann3r = {
         });
 
         this.sio.on('setSliderValue', (name, value) => {
+            console.log('new slider ', name, value);
             let key = (typeof value == 'object') ? 'values' : 'value';
-            $('.slider[data-slider=' + name + ']').slider('values', value);
+            $('.slider[data-slider=' + name + ']').slider(key, value);
         });
 
         this.sio.on('initSlider', this.slider.init);
 
         this.sio.on("disableControls", () => {
+
             $('.slider').slider('disable');
             $('.js-start').hide();
             $('.js-abort').show();
@@ -42,6 +44,10 @@ var Scann3r = {
             $('.js-start').show();
             $('.js-abort').hide();
             this.crop.enable();
+        });
+
+        this.sio.on('invert', (value) => {
+            $('#js-invert').prop('checked', value);
         });
 
         this.sio.on("newProject", (data) => {
@@ -62,11 +68,11 @@ var Scann3r = {
     initHandler: function () {
         var self = this;
         $('.js-start').click(() => {
-            this.sio.emit('start');
+            self.sio.emit('start');
         });
 
         $('.js-abort').click(() => {
-            this.sio.emit('abort');
+            self.sio.emit('abort');
         });
 
         $('.js-calibrate').click(() => {
@@ -77,20 +83,20 @@ var Scann3r = {
         });
 
         $('.js-rotor-move').click(function () {
-            sio.emit('rotorCalibrate', $(this).data('steps'));
+            self.sio.emit('rotorCalibrate', $(this).data('steps'));
         });
 
         $('#js-invert').change(() => {
-            sio.emit('rotorCalibrateDirection', $('#js-invert').prop('checked'));
+            self.sio.emit('rotorCalibrateDirection', $('#js-invert').prop('checked'));
         });
 
         $('.js-calibrate-done').click(() => {
-            sio.emit('rotorCalibrateSetHome');
+            self.sio.emit('rotorCalibrateSetHome');
             $("#dialog-calibrate").dialog('close');
         });
 
         $('.js-turntable-sethome').click(() => {
-            sio.emit('turntableCalibrateSetHome');
+            self.sio.emit('turntableCalibrateSetHome');
         });
 
         $('.js-nav').click(function (e) {
@@ -214,8 +220,10 @@ var Scann3r = {
                 let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
                 Scann3r.sio.emit('slider', event.type, name, value);
             }
+            console.log(typeof event.originalEvent, name, event.type);
             if (event.type == 'slidechange') {
                 $('.os-ring-preview').hide();
+
                 if (typeof event.originalEvent == 'undefined' && name == 'rotor') {
                     $('.os-ring').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
                 }

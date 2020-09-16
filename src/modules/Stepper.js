@@ -83,10 +83,10 @@ class Stepper {
 
         if (this._steps > this._targetSteps) {
             this._steps--;
-            this._dir.write( this._config.reverse?0:1 );
+            this._dir.write( this._config.invert?0:1 );
         } else if (this._steps < this._targetSteps) {
             this._steps++;
-            this._dir.write( this._config.reverse?1:0 );
+            this._dir.write( this._config.invert?1:0 );
         } else {
             this._turning = false;
             this.onTurn(this._steps);

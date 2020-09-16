@@ -40,7 +40,7 @@ class Scan {
     async init() {
         let r = this.registry.get('redis');
         this.projectNo = await r.incrby('projectNo', 1);
-        this.emitInfo('currentAction', `Starting project #${this.projectNo}.`);
+        this.emitInfo('info-current-action', `Starting project #${this.projectNo}.`);
 
         await r.lpush('projects', this.projectNo);
         await r.hset(`project:${this.projectNo}`, 'id', this.projectNo);
@@ -54,7 +54,7 @@ class Scan {
     async start() {
         this.io.emit('disableControls');
 
-        this.emitInfo('currentAction', `Moving rotor and turntable to start position.`);
+        this.emitInfo('info-current-action', `Moving rotor and turntable to start position.`);
         await this.registry.get('rotor').turnTo(this.rotorStart);
         await this.registry.get('turntable').turnTo(0);
         await this.registry.get('camera').stopPreview();
@@ -71,14 +71,14 @@ class Scan {
         await this.deleteImages('original', !complete);
 
         this.io.emit('enableControls');
-        this.emitInfo('currentImage', '');
+        this.emitInfo('info-current-image', '');
 
         if (complete) {
-            this.emitInfo('currentAction', `Finished scanning project #${this.projectNo}.`);
+            this.emitInfo('info-current-action', `Finished scanning project #${this.projectNo}.`);
             let project = await this.registry.get('redis').hgetall('project:' + this.projectNo);
             this.io.emit('newProject', project);
         } else {
-            this.emitInfo('currentAction', `Aborted project #${this.projectNo}.`);
+            this.emitInfo('info-current-action', `Aborted project #${this.projectNo}.`);
         }
 
     }
@@ -99,8 +99,8 @@ class Scan {
 
         let filename = `${this.rotorCurrent}-${this.turntableCurrent}.jpg`;
         let currentPicture = (this.rotorCurrent * (this.turntableCount + 1) + (this.turntableCurrent + 1)) + '/' + ((this.turntableCount + 1) * (this.rotorCount + 1));
-        this.emitInfo('currentImage', `Picture ${currentPicture}`);
-        this.emitInfo('currentAction', `Taking picture.`);
+        this.emitInfo('info-current-image', `Picture ${currentPicture}`);
+        this.emitInfo('info-current-action', `Taking picture.`);
         await this.registry.get('camera').snapPreview();
         await this.registry.get('camera').snapProd(this.folder + '/original/' + filename);
         if (this.checkAbort()) { return false; }
@@ -113,17 +113,17 @@ class Scan {
             if (this.rotorCurrent > this.rotorCount) {  // last rotor position complete = done
                 return true;
             }
-            this.emitInfo('currentAction', 'Moving turntable to home.');
+            this.emitInfo('info-current-action', 'Moving turntable to home.');
             await this.registry.get('turntable').turnTo(this.turntableRangeMax);
             this.registry.get('turntable').setHome();
             
             let steps = this.rotorStart + this.rotorCurrent * this.rotorSteps;
-            this.emitInfo('currentAction', `Moving rotor to ${steps} steps.`);
+            this.emitInfo('info-current-action', `Moving rotor to ${steps} steps.`);
             await this.registry.get('rotor').turnTo(steps);
         }
 
         let steps = this.turntableCurrent * this.turntableSteps;
-        this.emitInfo('currentAction', `Moving turntable to ${steps} steps.`);
+        this.emitInfo('info-current-action', `Moving turntable to ${steps} steps.`);
         await this.registry.get('turntable').turnTo(steps);
         return this.next();
     }
@@ -141,13 +141,13 @@ class Scan {
     }
 
     async zip() {
-        this.emitInfo('currentAction', `Creating ZIP file.`);
+        this.emitInfo('info-current-action', `Creating ZIP file.`);
         let cmd = `/usr/bin/zip -j ${this.folder}/images.zip ${this.folder}/cropped/*.jpg`;
         return this._exec(cmd);
     }
 
     async crop(filename) {
-        this.emitInfo('currentAction', `Cropping picture.`);
+        this.emitInfo('info-current-action', `Cropping picture.`);
         let fW = this.config.get('camera.resolutionProd.width')/100;
         let fH = this.config.get('camera.resolutionProd.height')/100;
         let x = Math.round(this.cropValues.x*fW);
@@ -155,12 +155,11 @@ class Scan {
         let w = Math.round(this.cropValues.width*fW);
         let h = Math.round(this.cropValues.height*fH);
         let cmd = `convert -crop ${w}x${h}+${x}+${y} ${this.folder}/original/${filename} ${this.folder}/cropped/${filename}`;
-        console.log(cmd);
         return this._exec(cmd);
     }
 
     async thumbnail() {
-        this.emitInfo('currentAction', `Creating thumbnail.`);
+        this.emitInfo('info-current-action', `Creating thumbnail.`);
         let middlePosition = Math.floor(this.rotorCount / 2);
         let cmd = `convert -define jpeg:size=180x180 ${this.folder}/cropped/0-${middlePosition}.jpg -thumbnail 180x180^ -gravity center -extent 180x180 jpeg:-`;
         let thumb = await this._exec(cmd, {encoding: 'binary', maxBuffer: 10 * 1024 * 1024});
@@ -171,7 +170,7 @@ class Scan {
 
     async deleteImages(type, force) {
         if (force || this.config.get('misc.deleteImages.' + type)) {
-            this.emitInfo('currentAction', `Deleting ${type} pictures.`);
+            this.emitInfo('info-current-action', `Deleting ${type} pictures.`);
             let cmd = `rm -rf ${this.folder}/${type}`;
             return this._exec(cmd);
         }

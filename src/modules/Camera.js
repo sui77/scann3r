@@ -15,6 +15,7 @@ class Camera {
     }
 
     constructor(registry) {
+        this.registry = registry;
         let config = this.config = registry.get('config');
         this.snapping = false;
         this.refresh = false;
@@ -82,7 +83,7 @@ class Camera {
 
     async snapProd(filename) {
         if (this.snapping) {
-            await this.waitReady();
+            await this.waitReady('a');
         }
         this.snapping = true;
         try {
@@ -96,26 +97,34 @@ class Camera {
     }
 
     async startPreview() {
-        log.info("Start preview");
-        if (!this.refresh && !this.snapping) {
-            await this.waitReady();
-            this.snapPreview();
+        if (this.registry.get('scanning')) {
+            return;
         }
-        this.refresh = true;
+        if (!this.refresh && !this.snapping) {
+            if (await this.waitReady('b')) {
+                log.info("Starting preview.");
+                this.refresh = true;
+                this.snapPreview();
+            }
+        }
+
     }
 
     async stopPreview() {
-        log.info("Stop preview");
+        log.info("Stop preview.");
         this.refresh = false;
-        await this.waitReady();
+        await this.waitReady('c');
     }
-    async waitReady() {
-        for (let n = 0; n < 20; n++) {
+
+    async waitReady(from) {
+        for (let n = 0; n < 50; n++) {
+            console.log(n, from);
             if (!this.snapping) {
-                return;
+                return true;
             }
             await sleep(100);
         }
+        return false;
     }
 
 }

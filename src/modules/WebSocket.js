@@ -62,12 +62,12 @@ class WebSocket {
 
     registerEvents() {
         this.registry.get('rotor').onTurn = (displayValue) => {
-            this.io.emit('slider-change', 'rotor', displayValue);
+            this.io.emit('setSliderValue', 'rotor', displayValue);
             this.registry.get('config').set('rotor.value', displayValue);
         }
 
         this.registry.get('turntable').onTurn = (displayValue) => {
-            this.io.emit('slider-change', 'turntable', displayValue);
+            this.io.emit('setSliderValue', 'turntable', displayValue);
             this.registry.get('config').set('turntable.value', displayValue);
         }
 
@@ -81,15 +81,19 @@ class WebSocket {
         this.io.on('connection', async (socket) => {
 
             log.info(`Client connected from ${socket.handshake.address}`);
+            if (this.registry.get('scanning')) {
+                socket.emit('disableControls');
+            }
+
             this.registry.get('camera').startPreview();
 
             for (let slider in this.sliderAction) {
                 let options = this.config.get(slider);
                 socket.emit('initSlider', slider, options);
             }
-
-            console.log(this.config.get('crop.values'));
+            socket.emit('info', 'info-version', this.config.get('version'));
             socket.emit('imgArea', this.config.get('crop.values'));
+            socket.emit('invert', this.config.get('rotor.invert'));
 
             socket.on('disconnect', () => {
                 log.info(`Client disconnected from ${socket.handshake.address}`);
@@ -129,8 +133,10 @@ class WebSocket {
 
             socket.on('start', async () => {
                 this.registry.set('abort', false);
+                this.registry.set('scanning', true);
                 let scan = new Scan(this.registry, this.io);
-                scan.start();
+                await scan.start();
+                this.registry.set('scanning', false);
             });
 
             socket.on('abort', async () => {
@@ -161,7 +167,8 @@ class WebSocket {
 
             socket.on('rotorCalibrateDirection', (data) => {
                 this.registry.get('rotor')._config.invert = data;
-                this.registry.get('config').set('rotor.reverse', data);
+                this.registry.get('config').set('rotor.invert', data);
+                this.io.emit('invert', data);
             });
 
             socket.on('rotorCalibrateSetHome', () => {
