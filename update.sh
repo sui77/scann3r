@@ -17,11 +17,8 @@ else
 fi
 git fetch
 
-git checkout -f $TAG
-if [ $? -eq 0 ]; then
-    npm update
-    echo "Update done."
-else
-    echo "Update failed."
-fi
+git reset --hard
+git checkout $TAG -f
+git pull
+npm update
 
