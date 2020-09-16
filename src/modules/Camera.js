@@ -1,6 +1,7 @@
 const PiCamera = require('pi-camera');
 const fs = require('fs');
 const {exec} = require("child_process");
+const log = require('bunyan').createLogger({name: 'Camera'});
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -10,80 +11,54 @@ var snapCount = 0;
 
 class Camera {
 
-
-    onSnapStart() {
-    }
-
-    onSnapDone(img) {
+    onPreviewDone(img) {
     }
 
     constructor(registry) {
-        this.registry = registry;
-        let config = registry.get('config');
+        let config = this.config = registry.get('config');
         this.snapping = false;
-
-        this.settingsDefaults = {
-            mode: 'photo',
-            output: '-',
-            width: 640,
-            height: 480,
-            nopreview: true,
-            timeout: 100
-        }
-
-        this.settings = {}
-
-        this.settingsPreview = {}
-
-        this.cam = null;
-        this.camPreview = null;
-
         this.refresh = false;
 
-        this.settingsDefaults.shutter = config.getConfig('shutter', 'value');
-        this.settingsDefaults.brightness = config.getConfig('brightness', 'value');
-        this.settingsDefaults.contrast = config.getConfig('contrast', 'value');
-        this.settingsDefaults.saturation = config.getConfig('saturation', 'value');
-        for (let n in this.settingsDefaults) {
-            this.settings[n] = this.settingsDefaults[n];
-            this.settingsPreview[n] = this.settingsDefaults[n];
-        }
-        let resoultion = config.getConfig('camera', 'resolution');
-        this.settings.width = resoultion.width;
-        this.settings.height = resoultion.height;
+        this.settingsProd = {
+            mode: 'photo',
+            output: '/dev/null',
+            nopreview: true,
+            timeout: 100,
+            shutter: config.get('shutter.value'),
+            brightness: config.get('brightness.value'),
+            contrast: config.get('contrast.value'),
+            saturation: config.get('saturation.value'),
+            width: config.get('camera.resolutionProd.width'),
+            height: config.get('camera.resolutionProd.height'),
+        };
 
-        resoultion = config.getConfig('camera', 'resolutionPreview');
-        this.settingsPreview.width = resoultion.width;
-        this.settingsPreview.height = resoultion.height;
+        this.settingsPreview = {
+            mode: 'photo',
+            output: '-',
+            nopreview: true,
+            timeout: 1,
+            shutter: config.get('shutter.value'),
+            brightness: config.get('brightness.value'),
+            contrast: config.get('contrast.value'),
+            saturation: config.get('saturation.value'),
+            width: config.get('camera.resolutionPreview.width'),
+            height: config.get('camera.resolutionPreview.height'),
+        };
+
+        this.camProd = null;
+        this.camPreview = null;
 
         this.initCam();
     }
 
-    setSetting(key, value) {
-        console.log("Set " + key + " " + value);
-        if (value == null) {
-            unset(this.settings[key]);
-        } else {
-            this.settings[key] = value;
-            this.settingsPreview[key] = value;
-        }
-        this.initCam();
-    }
-
-    setPreview() {
-        this.settings.width = 640;
-        this.settings.height = 480;
-        this.initCam();
-    }
-
-    setHires() {
-        this.settings.width = 3280;
-        this.settings.height = 2464;
+    set(key, value) {
+        this.config.set('key.value', value);
+        this.settingsProd[key] = this.settingsPreview[key] = value;
         this.initCam();
     }
 
     initCam() {
-        this.cam = new PiCamera(JSON.parse(JSON.stringify(this.settings)));
+        this.camProd = new PiCamera(JSON.parse(JSON.stringify(this.settingsProd)));
         this.camPreview = new PiCamera(JSON.parse(JSON.stringify(this.settingsPreview)));
     }
 
@@ -94,10 +69,9 @@ class Camera {
         this.snapping = true;
         try {
             let image = await this.camPreview.snapDataUrl();
-            this.onSnapDone(image);
+            this.onPreviewDone(image);
         } catch (e) {
             console.log('Could not snap preview', e);
-            process.exit();
         }
         this.snapping = false;
         if (this.refresh) {
@@ -106,52 +80,35 @@ class Camera {
 
     }
 
-    async snap(filename) {
+    async snapProd(filename) {
         if (this.snapping) {
             await this.waitReady();
         }
         this.snapping = true;
         try {
-            this.settings.output = filename;
+            this.settingsProd.output = filename;
             this.initCam();
-            await this.cam.snap();
-            await this.crop(filename);
+            await this.camProd.snap();
         } catch (e) {
             console.log('Could not snap image', e);
         }
         this.snapping = false;
     }
 
-    async crop(filename) {
-        let cfg = this.registry.get('config').getConfig('crop', 'values');
-
-        let fW = 3280/100;
-        let fH = 2464/100;
-        let x = Math.round(cfg.x*fW);
-        let y = Math.round(cfg.y*fH);
-        let w = Math.round(cfg.width*fW);
-        let h = Math.round(cfg.height*fH);
-        let fullCmd = `mogrify -crop ${w}x${h}+${x}+${y} ${filename}`;
-        let xx = () => { return new Promise((resolve, reject) => {
-            exec(fullCmd, (error, stdout, stderr) => {
-                if (stderr || error) {
-                    reject(stderr || error);
-                }
-                resolve(stdout);
-            });
-        })};
-        let res = await xx();
-        console.log(res);
-    }
-
-    startPreview() {
+    async startPreview() {
+        log.info("Start preview");
         if (!this.refresh && !this.snapping) {
-            console.log('MSS============');
+            await this.waitReady();
             this.snapPreview();
         }
         this.refresh = true;
     }
 
+    async stopPreview() {
+        log.info("Stop preview");
+        this.refresh = false;
+        await this.waitReady();
+    }
     async waitReady() {
         for (let n = 0; n < 20; n++) {
             if (!this.snapping) {
@@ -159,11 +116,6 @@ class Camera {
             }
             await sleep(100);
         }
-    }
-
-    async stopPreview() {
-        this.refresh = false;
-        await this.waitReady();
     }
 
 }

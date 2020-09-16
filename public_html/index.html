@@ -20,200 +20,232 @@
 
     <script>
 
+        const sio = io({path: "/ws"});
+        sio.on('connect', () => {
+
+        });
+
+
+        var gallery = {
+            init: () => {
+                this.template = $('#thumb-template').clone();
+                $('#thumb-template').remove();
+            },
+            createThumb: (data) => {
+                let t = this.template.clone();
+                t.attr('id', 'foo');
+                t.find('.thumbnail-image').attr('src', data.thumb);
+                t.find('.thumbnail-text').text('#' + data.id);
+                t.find('.zip').attr('href', '/' + data.id + '/images.zip');
+                t.find('.trash').click(function () {
+                    if (confirm('Are you sure?')) {
+                        sio.emit('delete', data.id, (err, r) => {
+                            $(t).remove();
+                        });
+                    }
+                });
+                t.find('.cloud').click(function () {
+                    sio.emit('proxy', data.id, (err, r) => {
+                        $('.proxy-url').html(r.url);
+
+                        $("#dialog-cloud").dialog(
+                            {
+                                width: 600,
+                                height: 300
+                            }
+                        );
+                    });
+                });
+                return t;
+            },
+            append: (thumb) => {
+                $('#thumbs').append(thumb);
+            },
+            prepend: (thumb) => {
+                $('#thumbs').prepend(thumb);
+            }
+        }
 
         $(function () {
 
 
-
-
-
             switchNav(location.hash == '' ? 'control' : location.hash);
 
-            var thumb = $('#thumb-template').clone();
-            $('#thumb-template').remove();
+            gallery.init();
 
-            $.get('/config.json', null, (config) => {
-                if (config.rotor.invert) {
-                    $('#js-invert').attr('checked', true);
+            let x = sio.emit('getProjects', 0, 100, (r) => {
+                for (let n in r) {
+                    gallery.append(gallery.createThumb(r[n]));
                 }
-                $('.js-version').text(config.version);
-
-                const sio = io({path: "/ws"});
-
-                let x = sio.emit('getProjects', 0, 10, (r) => {
-                    for (let n in r) {
-                        let t = thumb.clone();
-                        t.attr('id', 'foo');
-                        t.find('.thumbnail-image').attr('src', r[n].thumb);
-                        t.find('.thumbnail-text').text('#' + r[n].id);
-                        t.find('.zip').attr('href', '/' + r[n].id + '.zip');
-                        t.find('.trash').click(function () {
-                            alert('DEL ' + r[n].id);
-                        });
-                        t.find('.cloud').click(function () {
-                            sio.emit('proxy', r[n].id, (err, r) => {
-                                $('.proxy-url').html(r.url);
-
-                                $("#dialog-cloud").dialog(
-                                    {
-                                        width: 600,
-                                        height: 300
-                                    }
-                                );
-                            });
-                        });
-                        $('#thumbs').append(t);
-                    }
-                });
-
-                sio.on("snap-done", (data) => {
-                    $('#snapping').hide();
-                    $('#myCam').attr('src', data);
-
-                    $('#myCamDate').html(new Date().toISOString());
-                });
-
-                sio.on("slider-change", (name, value) => {
-                    if (typeof value == 'object') {
-                        $('.slider[data-slider=' + name + ']').slider('values', value);
-                    } else {
-                        $('.slider[data-slider=' + name + ']').slider('value', value);
-                    }
-                });
-
-                sio.on("disableSlider", () => {
-                    $('.slider').slider('disable');
-                });
-                sio.on("enableSlider", () => {
-                    $('.slider').slider('enable');
-                });
-
-                sio.on("imgArea", (data) => {
-                    console.log(data);
-                    let w = $('#myCam').width()/100;
-                    let h = $('#myCam').height()/100;
-                    console.log( data.x*w, data.y*h, data.x*w+data.width*w, data.y*h+data.height*h  );
-                    window.imgArea.setSelection( data.x*w, data.y*h, data.x*w+data.width*w, data.y*h+data.height*h )
-                    window.imgArea.update();
-                });
-
-                window.imgArea = $('#myCam').imgAreaSelect({
-                    instance: true,
-                    handles: true,
-                    onSelectEnd: function (img, selection) {
-                        console.log(selection);
-                        let xf = 100/img.width;
-                        let yf = 100/img.height;
-                        let relativeSelection = {x: selection.x1*xf, y: selection.y1*yf, width:selection.width*xf, height:selection.height*yf};
-                        console.log(relativeSelection);
-                        sio.emit('imgArea', relativeSelection);
-                        if (!selection.width || !selection.height) {
-                            return;
-                        }
-                        console.log(selection);
-                    }
-                });
-
-                let slideChange = (event, ui, name, conf, self, type) => {
-                    let decimals = conf.displayDecimals ?? 0;
-                    let uiVal = (ui.value * (conf.displayRange.max - conf.displayRange.min) / (conf.range.max - conf.range.min));
-                    uiVal = uiVal.toFixed(decimals);
-
-                    if (typeof ui.values != 'undefined') {
-                        for (let index in ui.values) {
-                            let val = (ui.values[index] * (conf.displayRange.max - conf.displayRange.min) / (conf.range.max - conf.range.min));
-                            $('#val-' + name + '-' + index).text(val.toFixed(decimals) + conf.displaySuffix);
-                        }
-                    } else {
-                        $('#val-' + name).text(uiVal + conf.displaySuffix + "(" + ui.value + ")");
-                    }
-
-                    if ($(self).data('slider') == 'rotor' || $(self).data('slider') == 'rotorAngleRangeToScan') {
-                        $('.os-ring-preview').show();
-                        $('.os-ring-preview').css('transform', 'rotate(' + uiVal + 'deg)');
-                    }
-                    if (typeof event.originalEvent != 'undefined') {
-                        let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
-                        sio.emit('slider-' + type, name, value);
-                    }
-                    if (type == 'change') {
-                        $('.os-ring-preview').hide();
-                        if (typeof event.originalEvent == 'undefined' && $(self).data('slider') == 'rotor') {
-                            $('.os-ring').css('transform', 'rotate(' + uiVal + 'deg)');
-                        }
-                    }
-                }
-
-                $('.slider').each((n, el) => {
-                    let name = $(el).data('slider');
-                    let conf = getConfig(config, name);
-                    var self = this;
-                    var options = {
-                        min: conf.range.min,
-                        max: conf.range.max,
-                        range: (typeof conf.values != 'undefined'),
-                        slide: function (event, ui) {
-                            slideChange(event, ui, name, conf, this, 'slide');
-                        },
-                        change: function (event, ui) {
-                            slideChange(event, ui, name, conf, this, 'change');
-                        },
-                    }
-                    if (typeof conf.steps != 'undefined') {
-                        options.step = conf.step;
-                    }
-                    $(el).slider(options);
-                    if (typeof conf.values != 'undefined') {
-                        console.log( name, conf.values);
-                        $(el).slider('values', conf.values);
-                        $('.slider[data-slider=rotorAngleRangeToScan]').slider('values', conf.values);
-                    }
-                    if (typeof conf.value != 'undefined') {
-                        $(el).slider('value', conf.value);
-                    }
-                });
-
-                $('.js-start').click(() => {
-                    sio.emit('start');
-                });
-
-                $('.js-calibrate').click(() => {
-                    $("#dialog-calibrate").dialog({
-                        width: 500,
-                        height: 300
-                    });
-                });
-
-                $('.js-rotor-move').click(function () {
-                    sio.emit('rotorCalibrate', $(this).data('steps'));
-                });
-
-                $('.js-rotor-up').click(() => {
-                    sio.emit('rotorCalibrate', -100);
-                });
-
-                $('.js-rotor-down').click(() => {
-                    sio.emit('rotorCalibrate', 100);
-                });
-
-                $('#js-invert').change(() => {
-                    sio.emit('rotorCalibrateDirection', $('#js-invert').prop('checked'));
-                });
-
-                $('.js-calibrate-done').click(() => {
-                    sio.emit('rotorCalibrateSetHome');
-                    $("#dialog-calibrate").dialog('close');
-                });
-
-                $('.js-turntable-sethome').click(()=> {
-                   sio.emit('turntableCalibrateSetHome');
-                });
-
-                $('.js-nav').click(function (e) {
-                    switchNav($(this).attr('href'));
-                });
-
             });
+
+            sio.on("info", (classname, text) => {
+                $('.' + classname).text(text);
+            });
+
+            sio.on('updateCameraPreview', (data) => {
+                $('#snapping').hide();
+                $('#myCam').attr('src', data);
+                $('#myCamDate').html(new Date().toISOString());
+            });
+
+
+
+            sc = function (event, ui, name, options) {
+console.log(event.type);
+                let displayValue = (val, formated) => {
+                    let displayValue = (val * (options.displayRange.max - options.displayRange.min) / (options.range.max - options.range.min));
+                    if (formated) {
+                        displayValue = displayValue.toFixed(options.displayDecimals ?? 0);
+                        displayValue += options.displaySuffix;
+                    }
+                    return displayValue;
+
+                }
+                if (typeof ui.values != 'undefined') { // range slider
+                    for (let index in ui.values) {
+                        $('#val-' + name + '-' + index).text( displayValue(ui.values[index], 1));
+                    }
+                } else {
+                    $('#val-' + name).text(displayValue(ui.value, 1));
+                }
+
+                if (name == 'rotor' || name == 'rotorAngleRangeToScan') {
+                    $('.os-ring-preview').show();
+                    $('.os-ring-preview').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
+                }
+console.log( typeof event.originalEvent);
+                if (typeof event.originalEvent != 'undefined') {
+                    let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
+                    sio.emit('slider', event.type, name, value);
+                }
+                if (event.type == 'slidechange') {
+                    $('.os-ring-preview').hide();
+                    if (typeof event.originalEvent == 'undefined' && name == 'rotor') {
+                        $('.os-ring').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
+                    }
+                }
+
+
+            }
+
+            sio.on('setSliderValue', (name, value) => {
+                if (typeof value == 'object') {
+                    $('.slider[data-slider=' + name + ']').slider('values', value);
+                } else {
+                    $('.slider[data-slider=' + name + ']').slider('value', value);
+                }
+            });
+
+            sio.on('initSlider', (name, options) => {
+                options.name = name;
+                let slider = $(`.slider[data-slider=${name}]`);
+                let sliderOptions = {
+                    min: options.range.min,
+                    max: options.range.max,
+                    range: (typeof options.values != 'undefined'),
+                    slide: (event, ui) => sc(event, ui, name, options),
+                    change: (event, ui) => sc(event, ui, name, options)
+                }
+                if (typeof options.steps != 'undefined') {
+                    options.step = options.step;
+                }
+                slider.slider(sliderOptions);
+                if (typeof options.values != 'undefined') {
+                    slider.slider('values', options.values);
+                    $('.slider[data-slider=rotorAngleRangeToScan]').slider('values', options.values);
+                }
+                if (typeof options.value != 'undefined') {
+                    //slider.slider('value', options.value);
+                }
+            });
+
+            sio.on("disableSlider", () => {
+                $('.slider').slider('disable');
+                $('.js-start').attr('disabled', true);
+            });
+            sio.on("enableSlider", () => {
+                $('.slider').slider('enable');
+                $('.js-start').removeAttr('disabled');
+            });
+
+            sio.on("newProject", (data) => {
+                let t1 = gallery.createThumb(data);
+                let t2 = gallery.createThumb(data);
+                $(t2).attr('id', 'newest');
+                gallery.prepend(t1);
+                $('#dialog-finished').html(t2)
+                    .dialog({
+                        width: 250,
+                        height: 330
+                    });
+            });
+
+            sio.on("imgArea", (data) => {
+                let w = $('#myCam').width() / 100;
+                let h = $('#myCam').height() / 100;
+                console.log(data.x * w, data.y * h, data.x * w + data.width * w, data.y * h + data.height * h);
+                window.imgArea.setSelection(data.x * w, data.y * h, data.x * w + data.width * w, data.y * h + data.height * h)
+                window.imgArea.update();
+            });
+
+            window.imgArea = $('#myCam').imgAreaSelect({
+                instance: true,
+                handles: true,
+                onSelectEnd: function (img, selection) {
+                    let xf = 100 / img.width;
+                    let yf = 100 / img.height;
+                    let relativeSelection = {x: selection.x1 * xf, y: selection.y1 * yf, width: selection.width * xf, height: selection.height * yf};
+                    console.log(relativeSelection);
+                    sio.emit('imgArea', relativeSelection);
+                    if (!selection.width || !selection.height) {
+                        return;
+                    }
+                    console.log(selection);
+                }
+            });
+
+
+            $('.js-start').click(() => {
+                sio.emit('start');
+            });
+
+            $('.js-calibrate').click(() => {
+                $("#dialog-calibrate").dialog({
+                    width: 500,
+                    height: 300
+                });
+            });
+
+            $('.js-rotor-move').click(function () {
+                sio.emit('rotorCalibrate', $(this).data('steps'));
+            });
+
+            $('.js-rotor-up').click(() => {
+                sio.emit('rotorCalibrate', -100);
+            });
+
+            $('.js-rotor-down').click(() => {
+                sio.emit('rotorCalibrate', 100);
+            });
+
+            $('#js-invert').change(() => {
+                sio.emit('rotorCalibrateDirection', $('#js-invert').prop('checked'));
+            });
+
+            $('.js-calibrate-done').click(() => {
+                sio.emit('rotorCalibrateSetHome');
+                $("#dialog-calibrate").dialog('close');
+            });
+
+            $('.js-turntable-sethome').click(() => {
+                sio.emit('turntableCalibrateSetHome');
+            });
+
+            $('.js-nav').click(function (e) {
+                switchNav($(this).attr('href'));
+            });
+
 
         });
 
@@ -298,7 +330,8 @@
                     <h2>Images per revision: <span id="val-imagesPerRevision"></span></h2>
                     <div class="slider" data-slider="imagesPerRevision"></div>
                 </div>
-                <button class="js-start">Start Scan <span id="scanInfo">(30 images)</span></button>
+                <button class="js-start">Start Scan</button>
+                <span class="currentImage"></span> <span class="currentAction"></span>
             </div>
 
             <div class="roundbox">
@@ -373,13 +406,15 @@
     <button class="js-calibrate-done">Done</button>
 </div>
 
-<div id="dialog-cloud" title="Calibrate rotor" style="display:none">
-    The file is now available through this public URL:
+<div id="dialog-cloud" title="External download" style="display:none">
+    The file is now available through this public URL once:
     <textarea class="proxy-url" style="border:solid 1px #ccc;width:90%; margin:3px; padding:5px;"></textarea>
 
     <button onClick="$('.proxy-url').select();document.execCommand('copy')"><i class="feather-clipboard"></i> Copy URL to clipboard</button>
     <a class="button" href="https://colab.research.google.com/github/sui77/Scann3r/blob/master/colab/Scann3rMeshroom.ipynb" target="_blank"><i class="feather-external-link"></i> Open Google Colab</a>
+</div>
 
+<div id="dialog-finished" title="Scan finished." style="display:none">
 </div>
 
 </body>

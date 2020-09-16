@@ -1,12 +1,17 @@
 var client = require("socket.io-client");
 var fs = require('fs').promises;
 const {v4: uuidv4} = require('uuid');
+const clients = {}
 
 class ProxyClient {
 
     constructor(registry, file) {
         this.file = file;
         this.uuid = uuidv4();
+        clients[this.uuid] = this;
+        for (let n in clients) {
+            console.log(n);
+        }
         console.log('Serving ' + file + ' at ' + this.uuid );
     }
 

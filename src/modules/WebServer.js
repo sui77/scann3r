@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const _ = require('lodash');
+const log = require('bunyan').createLogger({name: 'WebServer'});
 
 const mimeTypes = {
     jpg: 'image/jpeg',
@@ -10,26 +11,23 @@ const mimeTypes = {
     html: 'text/html',
     zip: 'application/zip',
     svg: 'image/svg+xml'
-}
+};
 
 class WebServer {
+
     constructor(registry) {
+
+        let port = registry.get('config').get('webserver.port');
+
         this.server = http.createServer(function (req, res) {
+                log.info(req.method + ' ' + req.url);
                 let file = '' + req.url.replace(/\?.*$/, '');
-console.log(file);
-console.log( registry.get('config').data.projectsFolder + '/' + file) ;
+
                 if (file == '' || file.match(/\/$/)) {
                     file += 'index.html';
                 }
 
-                if (file.match(/config\.json$/)) {
-                    res.statusCode = 200;
-
-                    res.setHeader('Content-Type', 'application/json');
-                    let page = JSON.stringify(registry.get('config').data);
-                    res.write(page);
-                    res.end();
-                } else if (file.match(/\.\./)) {
+                if (file.match(/\.\./)) {
                     res.statusCode = 403;
                     res.setHeader('Content-Type', 'text/html');
                     res.write("403 forbidden\n");
@@ -42,11 +40,11 @@ console.log( registry.get('config').data.projectsFolder + '/' + file) ;
                     res.setHeader('Content-Type', _.get(mimeTypes, ext, 'application/octetstream'));
                     res.write(page);
                     res.end();
-                } else if (fs.existsSync(registry.get('config').data.projectsFolder + file)) {
+                } else if (fs.existsSync(registry.get('config').get('misc.projectsFolder') + file)) {
                     let ext = file.split('.').pop();
 
                     res.statusCode = 200;
-                    const page = fs.readFileSync(registry.get('config').data.projectsFolder + file);
+                    const page = fs.readFileSync(registry.get('config').get('misc.projectsFolder') + file);
                     res.setHeader('Content-Type', _.get(mimeTypes, ext, 'application/octetstream'));
                     res.write(page);
                     res.end();
@@ -57,9 +55,9 @@ console.log( registry.get('config').data.projectsFolder + '/' + file) ;
                     res.end();
                 }
 
-
             }
-        ).listen(registry.get('config').data.webserver.port);
+        ).listen(port);
+        log.info(`Listening on port ${port}`);
     }
 
     getServer() {

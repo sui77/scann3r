@@ -7,13 +7,20 @@ const config = {
     proxy: {
         url: 'ws://mc.sui.li:807',
     },
-    projectsFolder: path.join(__dirname, '/projects'),
+    misc: {
+        projectsFolder: path.join(__dirname, '/projects'),
+        deleteImages: {
+            original: true,
+            cropped: true
+        },
+        sleepBeforeTakingPicture: 500,
+    },
     camera: {
         resolutionPreview: {
             width: 640,
             height: 480,
         },
-        resolution: {
+        resolutionProd: {
             width: 3280,
             height: 2464,
         },
@@ -32,7 +39,6 @@ const config = {
         enable: 3,
         range: {min: 0, max: 3200},
         displayRange: {min: 0, max: 360},
-        steps: 1,
         displayDecimals: 1,
         displaySuffix: '°',
         value: 0,

@@ -94,7 +94,7 @@ class Stepper {
             return;
         }
 
-        if (this._steps % 150== 0) {
+        if (this._steps % 250== 0) {
             this.onTurn(this._steps);
         }
 

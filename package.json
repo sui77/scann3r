@@ -1,11 +1,16 @@
 {
   "name": "scann3r",
-  "version": "master",
+  "description": "Alternative firmware for OpenScan Mini",
+  "repository": "https://github.com/sui77/pi-camera.git",
+  "license": "GPL-3.0-or-later",
+  "version": "0.0.1-dev",
   "scripts": {
-    "start" : "node src/index.js"
+    "start": "node src/index.js | node_modules/bunyan/bin/bunyan -o short -l INFO",
+    "start:dev": "nodemon src/index.js | node_modules/bunyan/bin/bunyan -o short"
   },
   "dependencies": {
     "async-redis": "^1.1.7",
+    "bunyan": "^1.8.14",
     "lodash": "^4.17.20",
     "nanotimer": "^0.3.15",
     "onoff": "^6.0.0",
