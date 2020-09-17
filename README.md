@@ -8,7 +8,7 @@ Scann3r is a firmware and user interface for the [OpenScan Mini](https://en.open
     bash <(curl -s https://raw.githubusercontent.com/sui77/scann3r/master/install.sh)
 
 
-## Install
+## Manual Install
 
 #### Dependencies
 First install all dependencies.
@@ -30,7 +30,7 @@ Checkout the source and run the update script which will get the latest release.
     ./update.sh
 
 #### Setup supervisor
-Supervisor will start scanner on boot and keep it running. If you installed it in a different directory than `/home/pi/scann3r` or want to run scann3r as a different user than `pi` you need to edit the configuration file.
+Supervisor will start Scann3r on boot and keep it running. If you installed it in a different directory than `/home/pi/scann3r` or want to run Scann3r as a different user than `pi` then you'll need to edit the configuration file.
 
-    ln -s ./scann3r-supervisor.conf /etc/supervisor/conf.d/scann3r-supervisor.conf
-    supervisorctl update
+    sudo ln -s /home/pi/scann3r/scann3r-supervisor.conf /etc/supervisor/conf.d/scann3r-supervisor.conf
+    sudo supervisorctl update
