@@ -13,7 +13,7 @@ git clone https://github.com/sui77/scann3r.git
 cd scann3r
 ./update.sh latest
 
-sudo ln -s ./scann3r-supervisor.conf /etc/supervisor/conf.d/scann3r-supervisor.conf
+sudo ln -s /home/pi/scann3r/scann3r-supervisor.conf /etc/supervisor/conf.d/scann3r-supervisor.conf
 sudo supervisorctl update
 
 echo ======================
