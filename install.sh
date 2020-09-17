@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+
 if [ $USER != "pi" ]; then
         echo "Script must be run as user: pi"
         exit -1
@@ -17,4 +18,13 @@ sudo ln -s /home/pi/scann3r/scann3r-supervisor.conf /etc/supervisor/conf.d/scann
 sudo supervisorctl update
 
 echo ======================
-echo Open scann3r => http://${HOSTNAME}:8085/
+echo "Scann3r should be available at one of these URLs:"
+echo ""
+echo "http://${HOSTNAME}:8085/"
+
+string=`hostname -I`
+IFS=' ' read -r -a array <<< "$string"
+for element in "${array[@]}"
+do
+    echo "http://$element:8085"
+done
