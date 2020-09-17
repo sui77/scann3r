@@ -28,3 +28,6 @@ for element in "${array[@]}"
 do
     echo "http://$element:8085"
 done
+
+echo ""
+echo "reboot your raspberry if the camera is not working."
