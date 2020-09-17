@@ -24,7 +24,6 @@ var Scann3r = {
         });
 
         this.sio.on('setSliderValue', (name, value) => {
-            console.log('new slider ', name, value);
             let key = (typeof value == 'object') ? 'values' : 'value';
             $('.slider[data-slider=' + name + ']').slider(key, value);
         });
@@ -142,12 +141,9 @@ var Scann3r = {
         change: (data) => {
             let w = $('#myCam').width() / 100;
             let h = $('#myCam').height() / 100;
-            console.log("C", data);
-            console.log("crop", data.x * w, data.y * h, data.x * w + data.width * w, data.y * h + data.height * h);
             Scann3r.crop.instance.setSelection(data.x * w, data.y * h, data.x * w + data.width * w, data.y * h + data.height * h)
             Scann3r.crop.instance.update();
             Scann3r.crop.data = data;
-            console.log('storing crop data', data);
         },
         setOption: (key, value) => {
             if (Scann3r.crop.instance != null) {
@@ -220,7 +216,6 @@ var Scann3r = {
                 let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
                 Scann3r.sio.emit('slider', event.type, name, value);
             }
-            console.log(typeof event.originalEvent, name, event.type);
             if (event.type == 'slidechange') {
                 $('.os-ring-preview').hide();
 
@@ -247,13 +242,18 @@ var Scann3r = {
         createThumb: (data) => {
             let t = this.template.clone();
             t.attr('id', 'foo');
+            t.addClass('thumb-' + data.id);
             t.find('.thumbnail-image').attr('src', data.thumb);
             t.find('.thumbnail-text').text('#' + data.id);
             t.find('.zip').attr('href', '/' + data.id + '/images.zip');
             t.find('.trash').click(function () {
                 if (confirm('Are you sure?')) {
                     Scann3r.sio.emit('delete', data.id, (err, r) => {
-                        $(t).remove();
+                        if (err) {
+                            alert(err);
+                        } else {
+                            $('.thumb-' + data.id).remove();
+                        }
                     });
                 }
             });

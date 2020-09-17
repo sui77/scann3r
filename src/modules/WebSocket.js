@@ -3,6 +3,7 @@ const Scan = require('../lib/Scan.js');
 const ProxyClient = require('./ProxyClient.js');
 const fs = require('fs');
 const log = require('bunyan').createLogger({name: 'WebSocket'});
+const rimraf = require('rimraf');
 
 class WebSocket {
 
@@ -150,11 +151,16 @@ class WebSocket {
                     cb('NOPE', false);
                     return;
                 }
-                let r = this.registry.get('redis');
-                r.del('project:' + id);
-                r.lrem('projects', 1, id);
-                fs.rmdirSync(this.config.get('misc.projectsFolder') + '/' + id, { recursive: true });
-                cb(null, 1);
+                try {
+                    let r = this.registry.get('redis');
+                    // fs.rmdirSync(this.config.get('misc.projectsFolder') + '/' + id, {recursive: true});
+                    rimraf.sync(this.config.get('misc.projectsFolder') + '/' + id);
+                    r.del('project:' + id);
+                    r.lrem('projects', 1, id);
+                    cb(null, 1);
+                } catch (e) {
+                    cb('Could not delete project' + e.message, null);
+                }
             });
 
             socket.on('rotorCalibrate', (steps) => {
