@@ -2,6 +2,8 @@
 
 Scann3r is a firmware and user interface for the [OpenScan Mini](https://en.openscan.eu/openscan-mini)
 
+![](https://www.sui.li/scann3r.jpg)
+
 ## Quick Install
 (Only tested on `Raspberry Pi OS (32-bit) Lite / Debian Buster` yet.)
 
