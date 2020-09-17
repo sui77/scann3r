@@ -13,7 +13,7 @@ Scann3r is a firmware and user interface for the [OpenScan Mini](https://en.open
 #### Dependencies
 First install all dependencies.
 
-    sudo apt update && apt install -y zip git nodejs npm pigpio redis-server imagemagick supervisor
+    sudo apt update && sudo apt install -y zip git nodejs npm pigpio redis-server imagemagick supervisor
 
 #### Setup Raspberry Camera
 If your camera is not set up yet, you need to enable it and reboot.
