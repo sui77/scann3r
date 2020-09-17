@@ -106,6 +106,9 @@ const config = {
         port: 6379,
         db: 5
     },
+    crop: {
+        values: {x: 10, y: 10, width: 80, height: 80}
+    }
 }
 
 module.exports = config;

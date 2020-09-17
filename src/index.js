@@ -57,6 +57,11 @@ if (!fs.existsSync(configfile)) {
 
 process.on('SIGINT', _ => {
     for (let n in gpio) {
-        gpio[n].unexport();
+        try {
+            gpio[n].unexport();
+        } catch (e) {
+            console.log('Error unexporting gpio ' + n);
+        }
     }
+    process.exit();
 });
