@@ -53,7 +53,7 @@ class Camera {
     }
 
     set(key, value) {
-        this.config.set('key.value', value);
+        this.config.set(`${key}.value`, value);
         this.settingsProd[key] = this.settingsPreview[key] = value;
         this.initCam();
     }
