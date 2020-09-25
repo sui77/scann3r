@@ -15,7 +15,7 @@ else
   TAG=$1
   echo Checkout $TAG
 fi
-git fetch
+git fetch --all --tags
 
 git reset --hard
 git checkout $TAG -f
