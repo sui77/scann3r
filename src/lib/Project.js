@@ -28,6 +28,10 @@ class Project {
         return this.getPath() + '/images-' + this.id + '.zip';
     }
 
+    addResultZip(value) {
+        this.set('resultZip', value);
+    }
+
     createFolder() {
         fs.mkdirSync(this.getPath());
         fs.mkdirSync(this.getPath('original'));

@@ -39,7 +39,6 @@ class Proxy {
     }
 
     async addFile(project) {
-
         let uuid = uuidv4();
         let src = project.getZipFileLocation();
         let stats = await fs.stat(src);
@@ -138,8 +137,8 @@ class Proxy {
 
         this.socket.on('done', async (uid) => {
             let me = this.files[uid];
-            this.registry.get('notification').notify('cloudDown-' + uid, 'Cloud transfer', 'Received <a href="x">xx</a> #' + me.projectId + ' results.', 100, true);
-            //this.project.
+            this.registry.get('notification').notify('cloudDown-' + uid, 'Cloud transfer', `Received <a href="${me.projectId}/${uid}.zip">result zip</a> for #${me.projectId}`, 100, true);
+            me.project.addResultZip(uid + ".zip");
             try {
                 me.dstFileHandle.close();
             } catch (e) {

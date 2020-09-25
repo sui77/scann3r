@@ -112,6 +112,7 @@ h2 {
 .thumbnail-icons {
     width: 80px;
     float: right;
+    text-align:right;
 }
 
 i {

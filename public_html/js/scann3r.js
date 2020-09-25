@@ -100,7 +100,6 @@ var Scann3r = {
         this.sio.on('initSlider', this.slider.init);
 
         this.sio.on("disableControls", () => {
-return;
             $('.slider').slider('disable');
             $('.js-start').hide();
             $('.js-abort').show();
@@ -344,6 +343,7 @@ return;
                     });
                 }
             });
+
             t.find('.cloud').click(function () {
                 Scann3r.sio.emit('proxy', data.id, (err, r) => {
                     if (err) {
@@ -352,6 +352,11 @@ return;
                     }
                 });
             });
+            if (typeof data.resultZip != 'undefined') {
+                t.find('.resultZip').attr('href', '/' + data.id + '/' + data.resultZip);
+            } else {
+                t.find('.resultZip').hide();
+            }
             return t;
         },
         append:
