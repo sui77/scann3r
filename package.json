@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "async-redis": "^1.1.7",
-    "bunyan": "^1.8.14",
     "lodash": "^4.17.20",
     "nanotimer": "^0.3.15",
     "onoff": "^6.0.0",

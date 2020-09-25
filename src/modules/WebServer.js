@@ -1,7 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const _ = require('lodash');
-const log = require('bunyan').createLogger({name: 'WebServer'});
+const log = require('../lib/Log.js').createLogger({name: 'WebServer'});
 
 const mimeTypes = {
     jpg: 'image/jpeg',

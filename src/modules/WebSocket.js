@@ -1,9 +1,9 @@
 const socketIo = require('socket.io');
 const Scan = require('../lib/Scan.js');
-const ProxyClient = require('./ProxyClient.js');
 const fs = require('fs');
-const log = require('bunyan').createLogger({name: 'WebSocket'});
+const log = require('../lib/Log.js').createLogger({name: 'WebSocket'});
 const rimraf = require('rimraf');
+const Project = require('../lib/Project');
 
 class WebSocket {
 
@@ -18,11 +18,15 @@ class WebSocket {
 
         this.sliderAction = {
             rotor: (type, value) => {
-                if (type == 'slide') { return; }
+                if (type == 'slide') {
+                    return;
+                }
                 this.registry.get('rotor').turnTo(value);
             },
             turntable: (type, value) => {
-                if (type == 'slide') { return; }
+                if (type == 'slide') {
+                    return;
+                }
                 this.registry.get('turntable').turnTo(value);
             },
 
@@ -45,15 +49,21 @@ class WebSocket {
                 this.registry.get('gpio').light2.write((value == 2) * 1);
             },
             imagesPerRevision: (type, value) => {
-                if (type == 'slide') { return; }
+                if (type == 'slide') {
+                    return;
+                }
                 this.registry.get('config').set('imagesPerRevision.value', value);
             },
             rotorAnglesPerScan: (type, value) => {
-                if (type == 'slide') { return; }
+                if (type == 'slide') {
+                    return;
+                }
                 this.registry.get('config').set('rotorAnglesPerScan.value', value);
             },
             rotorAngleRangeToScan: (type, value) => {
-                if (type == 'slide') { return; }
+                if (type == 'slide') {
+                    return;
+                }
                 this.registry.get('config').set('rotorAngleRangeToScan.values', value);
             },
         };
@@ -104,13 +114,12 @@ class WebSocket {
             });
 
             socket.on('proxy', async (id, cb) => {
-                let proxyClient = new ProxyClient(this.registry, this.config.get('misc.projectsFolder') + '/' + id + '/images.zip');
-                try {
-                    let pdata = await proxyClient.start();
-                    cb(null, pdata);
-                } catch (e) {
-                    cb('Proxy connection failed', null);
-                }
+                let project = new Project(id, this.registry);
+                let src = project.getZipFileLocation();
+                let dst = project.getPath() + '/result.zip';
+                this.registry.get('proxy').addFile(src, dst)
+                    .catch(err => cb(err.message, null));
+
             });
 
             socket.on('imgArea', (data) => {
@@ -133,10 +142,17 @@ class WebSocket {
             });
 
             socket.on('start', async () => {
+                this.io.emit('disableControls');
                 this.registry.set('abort', false);
                 this.registry.set('scanning', true);
                 let scan = new Scan(this.registry, this.io);
-                await scan.start();
+                scan.onProgress = (data) => {
+                    this.io.emit('progress', data);
+                };
+                let project = await scan.start();
+                let projectData = await project.getAll();
+                this.io.emit('newProject', projectData);
+                this.io.emit('enableControls');
                 this.registry.set('scanning', false);
             });
 
@@ -147,6 +163,7 @@ class WebSocket {
             });
 
             socket.on('delete', async (id, cb) => {
+                // @todo  project.delete();
                 if (!id.match(/^[0-9]*$/)) {
                     cb('NOPE', false);
                     return;
@@ -186,7 +203,7 @@ class WebSocket {
             });
 
             socket.on('slider', (type, name, value) => {
-               this.io.emit('setSliderValue', name, value);
+                this.io.emit('setSliderValue', name, value);
                 if (typeof this.sliderAction[name] != 'undefined') {
                     this.sliderAction[name](type, value);
                 } else {
@@ -197,6 +214,10 @@ class WebSocket {
 
         });
 
+    }
+
+    toast(msg) {
+        this.socket.emit('toast', msg);
     }
 }
 

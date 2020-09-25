@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const fs = require('fs');
-const log = require('bunyan').createLogger({name: 'Config'});
+const log = require('../lib/Log.js').createLogger({name: 'Config'});
 
 class Config {
 

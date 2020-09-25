@@ -34,7 +34,7 @@ class Stepper {
             if (typeof enableTimeouts['e' + this._enablePin] == 'undefined') {
                 enableTimeouts['e' + this._enablePin] = {
                     status: false,
-                    ts: Math.floor(+new Date() / 1000),
+                    ts: Math.floor(new Date() / 1000),
                     gpio: enable
                 }
                 enable.write(1);

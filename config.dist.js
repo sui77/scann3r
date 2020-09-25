@@ -5,7 +5,7 @@ const config = {
         port: 8085
     },
     proxy: {
-        url: 'ws://mc.sui.li:807',
+        url: 'ws://mc.sui.li:808',
         enabled: false,
     },
     misc: {
@@ -54,9 +54,6 @@ const config = {
         displaySuffix: '°',
         value: 90,
         invert: false,
-    },
-    crop: {
-        values: {}
     },
     imagesPerRevision: {
         range: {min: 1, max: 360},

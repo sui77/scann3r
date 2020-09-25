@@ -1,7 +1,7 @@
 const PiCamera = require('pi-camera');
 const fs = require('fs');
 const {exec} = require("child_process");
-const log = require('bunyan').createLogger({name: 'Camera'});
+const log = require('../lib/Log.js').createLogger({name: 'Camera'});
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -118,7 +118,6 @@ class Camera {
 
     async waitReady(from) {
         for (let n = 0; n < 50; n++) {
-            console.log(n, from);
             if (!this.snapping) {
                 return true;
             }

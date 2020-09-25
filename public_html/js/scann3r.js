@@ -13,9 +13,54 @@ var Scann3r = {
         this.gallery.loadPage(0);
     },
 
+    showWebsocketError() {
+        $('#websocketError').remove();
+        $('body').append('<div id="websocketError" style="position:fixed;right:0;bottom:0;background-color:#f00;color:#fff;font-weight:bold;;padding:5px;">websocket not connected!</div>');
+    },
+
+    hideWebsocketError() {
+        $('#websocketError').remove();
+    },
+
     initSioHandler() {
-        this.sio.on("info", (classname, text) => {
-            $('.' + classname).text(text);
+        this.sio.on('connect', () => {
+            this.hideWebsocketError();
+        });
+
+        this.sio.on('disconnect', () => {
+            if (!window.isUnloading) {
+                this.showWebsocketError();
+            }
+        })
+
+        this.sio.on('connect_error', () => {
+            this.showWebsocketError();
+        });
+
+        this.sio.on('proxy', (data) => {
+            $('.proxy-url').html(data.url);
+            $("#dialog-cloud").dialog(
+                {
+                    width: 600,
+                    height: 300
+                }
+            );
+        });
+
+        this.sio.on('toast', (data) => {
+            alert('toast');
+            $.toast({
+                heading: data.heading,
+                text: data.text,
+                position: 'bottom-right',
+                stack: false
+            })
+        });
+
+        this.sio.on("progress", (data) => {
+            for (n in data) {
+                $('.progress-' + n).text(data[n]);
+            }
         });
 
         this.sio.on('updateCameraPreview', (data) => {
@@ -102,7 +147,8 @@ var Scann3r = {
             self.switchNav($(this).attr('href'));
         });
 
-    },
+    }
+    ,
 
     switchNav: (hash) => {
         let section = hash.replace('#', '');
@@ -119,51 +165,61 @@ var Scann3r = {
         }
     },
 
-    crop: {
-        instance: null,
-        data: {},
-        init: () => {
-            Scann3r.crop.instance = $('#myCam').imgAreaSelect({
-                instance: true,
-                handles: true,
-                show: true,
-                onSelectEnd: function (img, selection) {
-                    let xf = 100 / img.width;
-                    let yf = 100 / img.height;
-                    let relativeSelection = {x: selection.x1 * xf, y: selection.y1 * yf, width: selection.width * xf, height: selection.height * yf};
-                    Scann3r.sio.emit('imgArea', relativeSelection);
-                    if (!selection.width || !selection.height) {
-                        return;
+    crop:
+        {
+            instance: null,
+            data:
+                {}
+            ,
+            init: () => {
+                Scann3r.crop.instance = $('#myCam').imgAreaSelect({
+                    instance: true,
+                    handles: true,
+                    show: true,
+                    onSelectEnd: function (img, selection) {
+                        let xf = 100 / img.width;
+                        let yf = 100 / img.height;
+                        let relativeSelection = {x: selection.x1 * xf, y: selection.y1 * yf, width: selection.width * xf, height: selection.height * yf};
+                        Scann3r.sio.emit('imgArea', relativeSelection);
+                        if (!selection.width || !selection.height) {
+                            return;
+                        }
                     }
+                });
+            },
+            change:
+                (data) => {
+                    let w = $('#myCam').width() / 100;
+                    let h = $('#myCam').height() / 100;
+                    Scann3r.crop.instance.setSelection(data.x * w, data.y * h, data.x * w + data.width * w, data.y * h + data.height * h)
+                    Scann3r.crop.instance.update();
+                    Scann3r.crop.data = data;
+                },
+            setOption:
+                (key, value) => {
+                    if (Scann3r.crop.instance != null) {
+                        let options = {}
+                        options[key] = value;
+                        Scann3r.crop.instance.setOptions(options);
+                    }
+                },
+            disable:
+                () => Scann3r.crop.setOption('disable', true),
+            enable:
+                () => Scann3r.crop.setOption('enable', true),
+            hide:
+                () => Scann3r.crop.setOption('hide', true),
+            show:
+                () => {
+                    if (Scann3r.crop.instance != null) {
+                        Scann3r.crop.change(Scann3r.crop.data);
+                    }
+                    Scann3r.crop.setOption('show', true);
                 }
-            });
-        },
-        change: (data) => {
-            let w = $('#myCam').width() / 100;
-            let h = $('#myCam').height() / 100;
-            Scann3r.crop.instance.setSelection(data.x * w, data.y * h, data.x * w + data.width * w, data.y * h + data.height * h)
-            Scann3r.crop.instance.update();
-            Scann3r.crop.data = data;
-        },
-        setOption: (key, value) => {
-            if (Scann3r.crop.instance != null) {
-                let options = {}
-                options[key] = value;
-                Scann3r.crop.instance.setOptions(options);
-            }
-        },
-        disable: () => Scann3r.crop.setOption('disable', true),
-        enable: () => Scann3r.crop.setOption('enable', true),
-        hide: () => Scann3r.crop.setOption('hide', true),
-        show: () => {
-            if (Scann3r.crop.instance != null) {
-                Scann3r.crop.change(Scann3r.crop.data);
-            }
-            Scann3r.crop.setOption('show', true);
+
+
         }
-
-
-    },
+    ,
 
     slider: {
         init: (name, options) => {
@@ -188,43 +244,46 @@ var Scann3r = {
                 slider.slider('value', options.value);
             }
         },
-        setValue: function (event, ui, name, options) {
+        setValue:
 
-            let displayValue = (val, formated) => {
-                let displayValue = (val * (options.displayRange.max - options.displayRange.min) / (options.range.max - options.range.min));
-                if (formated) {
-                    displayValue = displayValue.toFixed(options.displayDecimals ?? 0);
-                    displayValue += options.displaySuffix;
+            function (event, ui, name, options) {
+
+                let displayValue = (val, formated) => {
+                    let displayValue = (val * (options.displayRange.max - options.displayRange.min) / (options.range.max - options.range.min));
+                    if (formated) {
+                        displayValue = displayValue.toFixed(options.displayDecimals ?? 0);
+                        displayValue += options.displaySuffix;
+                    }
+                    return displayValue;
+
                 }
-                return displayValue;
-
-            }
-            if (typeof ui.values != 'undefined') { // range slider
-                for (let index in ui.values) {
-                    $('#val-' + name + '-' + index).text(displayValue(ui.values[index], 1));
+                if (typeof ui.values != 'undefined') { // range slider
+                    for (let index in ui.values) {
+                        $('#val-' + name + '-' + index).text(displayValue(ui.values[index], 1));
+                    }
+                } else {
+                    $('#val-' + name).text(displayValue(ui.value, 1));
                 }
-            } else {
-                $('#val-' + name).text(displayValue(ui.value, 1));
-            }
 
-            if (name == 'rotor' || name == 'rotorAngleRangeToScan') {
-                $('.os-ring-preview').show();
-                $('.os-ring-preview').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
-            }
+                if (name == 'rotor' || name == 'rotorAngleRangeToScan') {
+                    $('.os-ring-preview').show();
+                    $('.os-ring-preview').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
+                }
 
-            if (typeof event.originalEvent != 'undefined') {
-                let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
-                Scann3r.sio.emit('slider', event.type, name, value);
-            }
-            if (event.type == 'slidechange') {
-                $('.os-ring-preview').hide();
+                if (typeof event.originalEvent != 'undefined') {
+                    let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
+                    Scann3r.sio.emit('slider', event.type, name, value);
+                }
+                if (event.type == 'slidechange') {
+                    $('.os-ring-preview').hide();
 
-                if (typeof event.originalEvent == 'undefined' && name == 'rotor') {
-                    $('.os-ring').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
+                    if (typeof event.originalEvent == 'undefined' && name == 'rotor') {
+                        $('.os-ring').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
+                    }
                 }
             }
-        }
-    },
+    }
+    ,
 
     gallery: {
         init: (sio) => {
@@ -232,20 +291,24 @@ var Scann3r = {
             this.template = $('#thumb-template').clone();
             $('#thumb-template').remove();
         },
-        loadPage: function (page) {
-            let x = Scann3r.sio.emit('getProjects', 0, 100, (r) => {
-                for (let n in r) {
-                    this.append(this.createThumb(r[n]));
-                }
-            });
-        },
+        loadPage:
+
+            function (page) {
+                let x = Scann3r.sio.emit('getProjects', 0, 100, (r) => {
+                    for (let n in r) {
+                        this.append(this.createThumb(r[n]));
+                    }
+                });
+            }
+
+        ,
         createThumb: (data) => {
             let t = this.template.clone();
             t.attr('id', 'foo');
             t.addClass('thumb-' + data.id);
             t.find('.thumbnail-image').attr('src', data.thumb);
             t.find('.thumbnail-text').text('#' + data.id);
-            t.find('.zip').attr('href', '/' + data.id + '/images.zip');
+            t.find('.zip').attr('href', '/' + data.id + '/images-' + data.id + '.zip');
             t.find('.trash').click(function () {
                 if (confirm('Are you sure?')) {
                     Scann3r.sio.emit('delete', data.id, (err, r) => {
@@ -259,24 +322,22 @@ var Scann3r = {
             });
             t.find('.cloud').click(function () {
                 Scann3r.sio.emit('proxy', data.id, (err, r) => {
-                    $('.proxy-url').html(r.url);
+                    if (err) {
 
-                    $("#dialog-cloud").dialog(
-                        {
-                            width: 600,
-                            height: 300
-                        }
-                    );
+                        alert(err);
+                    }
                 });
             });
             return t;
         },
-        append: (thumb) => {
-            $('#thumbs').append(thumb);
-        },
-        prepend: (thumb) => {
-            $('#thumbs').prepend(thumb);
-        }
+        append:
+            (thumb) => {
+                $('#thumbs').append(thumb);
+            },
+        prepend:
+            (thumb) => {
+                $('#thumbs').prepend(thumb);
+            }
     }
 
 

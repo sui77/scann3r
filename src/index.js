@@ -2,6 +2,7 @@ const WebServer = require('./modules/WebServer.js');
 const WebSocket = require('./modules/WebSocket.js');
 const Stepper = require('./modules/Stepper.js');
 const Camera = require('./modules/Camera.js');
+const Proxy = require('./modules/Proxy.js');
 const Registry = require('./lib/Registry.js');
 const Config = require('./lib/Config.js');
 const Redis = require('async-redis');
@@ -9,7 +10,7 @@ const Gpio = require('onoff').Gpio;
 const path = require('path');
 const fs = require('fs');
 
-const log = require('bunyan').createLogger({name: 'Main'});
+const log = require('./lib/Log.js').createLogger({name: 'Main'});
 
 let gpio = {};
 
@@ -46,6 +47,7 @@ if (!fs.existsSync(configfile)) {
         registry.set('camera', new Camera(registry));
         registry.set('webServer', new WebServer(registry));
         registry.set('webSocket', new WebSocket(registry));
+        registry.set('proxy', new Proxy(registry));
         log.info('Ready!');
     } catch(e) {
         log.error('Error on startup: ' + e.message);
@@ -64,4 +66,9 @@ process.on('SIGINT', _ => {
         }
     }
     process.exit();
+});
+
+process.on('unhandledRejection', (reason, p) => {
+  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+  // application specific logging, throwing an error, or other logic here
 });
