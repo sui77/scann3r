@@ -5,7 +5,7 @@ const config = {
         port: 8085
     },
     proxy: {
-        url: 'ws://mc.sui.li:808',
+        url: 'ws://mc.sui.li:807',
         enabled: false,
     },
     misc: {
