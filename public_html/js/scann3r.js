@@ -55,6 +55,10 @@ var Scann3r = {
             }
         });
 
+        this.sio.on('info', (id, text) => {
+            $('.' + id).text(text);
+        });
+
         this.sio.on('toast', (data) => {
             let toast = {
                 heading: data.heading,

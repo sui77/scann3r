@@ -19,6 +19,7 @@ class Config {
             }
         }
 
+
         let file = JSON.parse(fs.readFileSync('./package.json').toString());
         this.data.version = file.version;
     }

@@ -102,6 +102,8 @@ class WebSocket {
                 let options = this.config.get(slider);
                 socket.emit('initSlider', slider, options);
             }
+
+            console.log( this.config.get('version') );
             socket.emit('info', 'info-version', this.config.get('version'));
             socket.emit('imgArea', this.config.get('crop.values'));
             socket.emit('invert', this.config.get('rotor.invert'));
@@ -157,7 +159,6 @@ class WebSocket {
             socket.on('abort', async () => {
                 console.log('ABORT');
                 this.registry.set('abort', true);
-                this.io.emit('info', 'currentAction', 'Aborting...');
             });
 
             socket.on('delete', async (id, cb) => {
