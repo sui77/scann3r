@@ -115,9 +115,7 @@ class WebSocket {
 
             socket.on('proxy', async (id, cb) => {
                 let project = new Project(id, this.registry);
-                let src = project.getZipFileLocation();
-                let dst = project.getPath() + '/result.zip';
-                this.registry.get('proxy').addFile(src, dst)
+                this.registry.get('proxy').addFile(project)
                     .catch(err => cb(err.message, null));
 
             });
@@ -216,8 +214,11 @@ class WebSocket {
 
     }
 
-    toast(msg) {
-        this.socket.emit('toast', msg);
+    toast(id, heading, text, percent) {
+        this.io.emit('toast', {id: id, heading: heading, text: text, percent:percent} );
+    }
+    toastClose(id) {
+        this.io.emit('toastClose', id);
     }
 }
 

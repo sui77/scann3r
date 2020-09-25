@@ -13,7 +13,7 @@
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
     <script src="/js/jquery.ui.touch-punch.min.js"></script>
     <script src="/js/odyniec-imgareaselect/jquery.imgareaselect.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js" integrity="sha512-zlWWyZq71UMApAjih4WkaRpikgY9Bz1oXIW5G0fED4vk14JjGlQ1UmkGM392jEULP8jbNMiwLWdM8Z87Hu88Fw==" crossorigin="anonymous"></script>
+    <script src="/js/jquery.toast.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.css" integrity="sha512-wJgJNTBBkLit7ymC6vvzM1EcSWeM9mmOu+1USHaRBbHkm6W9EgM0HY27+UtUaprntaYQJF75rc8gjxllKs5OIQ==" crossorigin="anonymous" />
 
     <script src="js/scann3r.js"></script>
@@ -165,7 +165,7 @@
 <div id="dialog-cloud" class="dialog" title="External download">
     The file is now available through this public URL once:
     <textarea class="proxy-url"></textarea>
-
+<a href="" id="dev-down">down</a>
     <button onClick="$('.proxy-url').select();document.execCommand('copy')"><i class="feather-clipboard"></i> Copy URL to clipboard</button>
     <a class="button" href="https://colab.research.google.com/github/sui77/Scann3r/blob/master/colab/Scann3rMeshroom.ipynb" target="_blank"><i class="feather-external-link"></i> Open Google Colab</a>
 </div>

@@ -9,6 +9,7 @@ const Redis = require('async-redis');
 const Gpio = require('onoff').Gpio;
 const path = require('path');
 const fs = require('fs');
+const Notification = require('./lib/Notification');
 
 const log = require('./lib/Log.js').createLogger({name: 'Main'});
 
@@ -47,7 +48,9 @@ if (!fs.existsSync(configfile)) {
         registry.set('camera', new Camera(registry));
         registry.set('webServer', new WebServer(registry));
         registry.set('webSocket', new WebSocket(registry));
+        registry.set('notification', new Notification(registry));
         registry.set('proxy', new Proxy(registry));
+
         log.info('Ready!');
     } catch(e) {
         log.error('Error on startup: ' + e.message);

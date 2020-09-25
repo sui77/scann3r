@@ -11,6 +11,7 @@ var Scann3r = {
         this.crop.init();
         this.gallery.init();
         this.gallery.loadPage(0);
+        this.toasts = [];
     },
 
     showWebsocketError() {
@@ -39,6 +40,7 @@ var Scann3r = {
 
         this.sio.on('proxy', (data) => {
             $('.proxy-url').html(data.url);
+            $('#dev-down').attr('href', data.url);
             $("#dialog-cloud").dialog(
                 {
                     width: 600,
@@ -47,14 +49,32 @@ var Scann3r = {
             );
         });
 
+        this.sio.on('toastClose', (id) => {
+            if (typeof this.toasts[id] != 'undefined') {
+                this.toasts[id].close();
+            }
+        });
+
         this.sio.on('toast', (data) => {
-            alert('toast');
-            $.toast({
+            let toast = {
                 heading: data.heading,
                 text: data.text,
                 position: 'bottom-right',
-                stack: false
-            })
+                hideAfter: false,
+                loader: false,
+                sticky: true,
+                afterShown: () => {
+                    console.log('yup', $(this));
+
+                }
+            }
+
+            if (typeof this.toasts[data.id] != 'undefined') {
+                this.toasts[data.id].update(toast);
+                this.toasts[data.id].loader(data.percent);
+            } else {
+                this.toasts[data.id] = $.toast(toast);
+            }
         });
 
         this.sio.on("progress", (data) => {
@@ -76,7 +96,7 @@ var Scann3r = {
         this.sio.on('initSlider', this.slider.init);
 
         this.sio.on("disableControls", () => {
-
+return;
             $('.slider').slider('disable');
             $('.js-start').hide();
             $('.js-abort').show();

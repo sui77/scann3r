@@ -35,19 +35,26 @@ class Proxy {
     }
 
     maintenance() {
-
+        console.log(Object.keys(this.files).length);
     }
 
-    async addFile(src, dst) {
+    async addFile(project) {
+
         let uuid = uuidv4();
+        let src = project.getZipFileLocation();
         let stats = await fs.stat(src);
         let size = stats.size;
+
         this.files[uuid] = {
+            project: project,
             uuid: uuid,
+            projectId: await project.get('id'),
             srcName: src,
             srcFileHandle: await fs.open(src, 'r'),
             srcSize: size,
-            dstName: dst,
+            srcTransfered: 0,
+            dstName: project.getPath() + '/' + uuid + '.zip',
+            dstTransfered: 0,
             dstFileHandle: null,
             timeCreated: new Date() / 1000,
             status: STATUS_CREATED,
@@ -55,13 +62,19 @@ class Proxy {
         }
         await this.connectToProxy();
         this.socket.emit('register', uuid, size, (err, r) => {
-            this.io.emit('proxy', r);
+            if (!err) {
+                this.io.emit('proxy', r);
+                this.files[uuid].status = STATUS_REGISTERED;
+            } else {
+                this.registry.get('notification').notify('error-' + uuid, 'Error', 'Proxy error: ' + err, 0, false);
+
+            }
         });
         log.info("Registered file " + uuid);
     }
 
     disconnected(msg) {
-        console.log("X", typeof this.socket, msg);
+        this.registry.get('notification').notify('error-proxy', 'Error', 'Proxy error: ' + msg, 0, false);
         this.socket = null;
     }
 
@@ -92,27 +105,47 @@ class Proxy {
         });
 
         this.socket.on('getData', async (uid, cb) => {
+            let me = this.files[uid];
             let buffer = Buffer.alloc(BUFFER_SIZE);
-            let data = await this.files[uid].srcFileHandle.read(buffer, 0, BUFFER_SIZE);
+            let data = await me.srcFileHandle.read(buffer, 0, BUFFER_SIZE);
+            me.srcTransfered += data.bytesRead;
             if (data.bytesRead == 0) {
-                this.files[uid].status = STATUS_TRANSFERED;
+                me.status = STATUS_TRANSFERED;
+                this.registry.get('notification').close('cloudUp-' + uid);
+                me.srcFileHandle.close();
+            } else {
+                let percent = (100 / me.srcSize * me.srcTransfered).toFixed(0);
+                this.registry.get('notification').notify('cloudUp-' + uid, 'Cloud transfer', 'Uploading #' + me.projectId + ' (' + percent + '%)', percent, true);
+
             }
+
+
             cb(data);
         });
 
-        this.socket.on('putData', async (uid, chunk) => {
-            if (this.files[uid].dstFileHandle == null) {
-                this.files[uid].dstFileHandle = require('fs').createWriteStream(this.files[uid].dstName);
+        this.socket.on('putData', async (uid, size, chunk) => {
+
+            let me = this.files[uid];
+            if (me.dstFileHandle == null) {
+                me.dstFileHandle = require('fs').createWriteStream(me.dstName);
             }
-            this.files[uid].dstFileHandle.write(chunk);
+            me.dstFileHandle.write(chunk);
+
+            me.dstTransfered += chunk.length * 1;
+            let percent = (100 / size * me.dstTransfered).toFixed(0);
+            this.registry.get('notification').notify('cloudDown-' + uid, 'Cloud transfer', 'Receiving  #' + me.projectId + ' (' + percent + '%)', percent, true);
         });
 
         this.socket.on('done', async (uid) => {
+            let me = this.files[uid];
+            this.registry.get('notification').notify('cloudDown-' + uid, 'Cloud transfer', 'Received <a href="x">xx</a> #' + me.projectId + ' results.', 100, true);
+            //this.project.
             try {
-                this.files[uid].dstFileHandle.close();
+                me.dstFileHandle.close();
             } catch (e) {
 
             }
+            delete this.files[uid];
         });
 
         for (let n = 0; n < 25; n++) {
