@@ -1,21 +1,21 @@
 {
-  "name": "scann3r",
-  "description": "Alternative firmware for OpenScan Mini",
-  "repository": "https://github.com/sui77/pi-camera.git",
-  "license": "GPL-3.0-or-later",
-  "version": "0.0.1-dev",
-  "scripts": {
-    "start": "node src/index.js | node_modules/bunyan/bin/bunyan -o short -l INFO",
-    "start:dev": "nodemon src/index.js | node_modules/bunyan/bin/bunyan -o short"
-  },
-  "dependencies": {
-    "async-redis": "^1.1.7",
-    "lodash": "^4.17.20",
-    "nanotimer": "^0.3.15",
-    "onoff": "^6.0.0",
-    "pi-camera": "^1.5.0",
-    "rimraf": "^3.0.2",
-    "socket.io": "^2.3.0",
-    "uuid": "^8.3.0"
-  }
+    "name": "scann3r",
+    "description": "Alternative firmware for OpenScan Mini",
+    "repository": "https:\/\/github.com\/sui77\/pi-camera.git",
+    "license": "GPL-3.0-or-later",
+    "version": "0.0.8-beta",
+    "scripts": {
+        "start": "node src\/index.js | node_modules\/bunyan\/bin\/bunyan -o short -l INFO",
+        "start:dev": "nodemon src\/index.js | node_modules\/bunyan\/bin\/bunyan -o short"
+    },
+    "dependencies": {
+        "async-redis": "^1.1.7",
+        "lodash": "^4.17.20",
+        "nanotimer": "^0.3.15",
+        "onoff": "^6.0.0",
+        "pi-camera": "^1.5.0",
+        "rimraf": "^3.0.2",
+        "socket.io": "^2.3.0",
+        "uuid": "^8.3.0"
+    }
 }
