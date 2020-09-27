@@ -23,7 +23,7 @@ class WebServer {
                 //log.info(req.method + ' ' + req.url);
                 let file = '' + req.url.replace(/\?.*$/, '');
 
-                if (file == '' || file.match(/\/$/)) {
+                if (file === '' || file.match(/\/$/)) {
                     file += 'index.html';
                 }
 
@@ -34,7 +34,6 @@ class WebServer {
                     res.end();
                 } else if (fs.existsSync('./public_html' + file)) {
                     let ext = file.split('.').pop();
-
                     res.statusCode = 200;
                     const page = fs.readFileSync('./public_html' + file);
                     res.setHeader('Content-Type', _.get(mimeTypes, ext, 'application/octetstream'));
@@ -42,7 +41,6 @@ class WebServer {
                     res.end();
                 } else if (fs.existsSync(registry.get('config').get('misc.projectsFolder') + file)) {
                     let ext = file.split('.').pop();
-
                     res.statusCode = 200;
                     const page = fs.readFileSync(registry.get('config').get('misc.projectsFolder') + file);
                     res.setHeader('Content-Type', _.get(mimeTypes, ext, 'application/octetstream'));
@@ -54,6 +52,7 @@ class WebServer {
                     res.write("404 not found\n");
                     res.end();
                 }
+                log.info(`${req.method} ${req.url} - ${req.connection.remoteAddress} - ${res.statusCode}`);
 
             }
         ).listen(port);

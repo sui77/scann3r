@@ -5,13 +5,11 @@ let timeoutInterval = null;
 
 class Stepper {
 
+    onTurn(step) {
 
+    }
 
     constructor(config, step, dir, enable) {
-
-
-
-        this.onTurn = function(step) {};
 
         this._config = config;
         this._abort = false;
@@ -25,9 +23,6 @@ class Stepper {
         this._dir = dir;
         this._step.write(0);
         this._dir.write(0);
-
-
-
 
         if (enable !== null) {
             let pin = enable._gpio;
@@ -43,12 +38,6 @@ class Stepper {
                 setInterval(this.autoToggleDisable, 1000);
             }
         }
-
-    }
-
-
-    get turning() {
-        return this._turning;
     }
 
     autoToggleDisable() {
@@ -83,10 +72,10 @@ class Stepper {
 
         if (this._steps > this._targetSteps) {
             this._steps--;
-            this._dir.write( this._config.invert?0:1 );
+            this._dir.write(this._config.invert ? 0 : 1);
         } else if (this._steps < this._targetSteps) {
             this._steps++;
-            this._dir.write( this._config.invert?1:0 );
+            this._dir.write(this._config.invert ? 1 : 0);
         } else {
             this._turning = false;
             this.onTurn(this._steps);
@@ -94,17 +83,16 @@ class Stepper {
             return;
         }
 
-        if (this._steps % 250== 0) {
+        if (this._steps % 250 == 0) {
             this.onTurn(this._steps);
         }
 
         this._step.write(1);
-         var timer = new NanoTimer();
+        var timer = new NanoTimer();
         timer.setTimeout(() => {
             this._step.write(0);
-            timer.setTimeout(() => this._turn( res), [timer], '500u');
+            timer.setTimeout(() => this._turn(res), [timer], '500u');
         }, [timer], '500u');
-
     }
 
     setHome() {

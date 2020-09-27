@@ -17,9 +17,11 @@ function sleep(ms) {
 class Proxy {
 
     onInfo(msg) {
-        // @todo abhängigkeiten nochmal irgendwie sauberer lösen
-        this.registry.get('webSocket').toast(msg);
     }
+
+    onRegistered(msg) {
+    }
+
 
     info(msg) {
         this.onInfo(msg);
@@ -27,7 +29,6 @@ class Proxy {
 
     constructor(registry) {
         log.info("Instanciating Proxy " + registry.get('config').get('version'));
-        this.io = registry.get('webSocket').io;
         this.registry = registry;
         this.files = {};
         this.socket = null;
@@ -35,7 +36,19 @@ class Proxy {
     }
 
     maintenance() {
-        console.log(Object.keys(this.files).length);
+        if ( this.socket != null && Object.keys(this.files).length == 0) {
+            this.socket.close();
+            this.socket = null;
+            this.files = {};
+        }
+    }
+
+    removeAllFiles() {
+
+    }
+
+    removeFile(uid) {
+
     }
 
     async addFile(project) {
@@ -62,7 +75,7 @@ class Proxy {
         await this.connectToProxy();
         this.socket.emit('register', uuid, size, (err, r) => {
             if (!err) {
-                this.io.emit('proxy', r);
+                this.onRegistered(r);
                 this.files[uuid].status = STATUS_REGISTERED;
             } else {
                 this.registry.get('notification').notify('error-' + uuid, 'Error', 'Proxy error: ' + err, 0, false);
@@ -83,7 +96,7 @@ class Proxy {
             return;
         }
 
-        this.socket = client.connect("ws://mc.sui.li:808", {
+        this.socket = client.connect(this.registry.get('config').get('proxy.url'), {
             path: '/ws',
             reconnection: false,
             timeout: 2000,
@@ -100,7 +113,12 @@ class Proxy {
 
         this.socket.on('disconnect', () => {
             console.log('proxy disconnected');
+            this.files = {};
             this.socket = null;
+        });
+
+        this.socket.on('expired',(uid) => {
+            delete this.files[uid];
         });
 
         this.socket.on('getData', async (uid, cb) => {
@@ -154,7 +172,6 @@ class Proxy {
             }
         }
 
-        throw new Error('noooo');
     }
 }
 

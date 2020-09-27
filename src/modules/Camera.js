@@ -1,13 +1,9 @@
 const PiCamera = require('pi-camera');
-const fs = require('fs');
-const {exec} = require("child_process");
 const log = require('../lib/Log.js').createLogger({name: 'Camera'});
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-var snapCount = 0;
 
 class Camera {
 
@@ -72,7 +68,7 @@ class Camera {
             let image = await this.camPreview.snapDataUrl();
             this.onPreviewDone(image);
         } catch (e) {
-            console.log('Could not snap preview', e);
+            log.error('Could not take preview picture ' + e.message);
         }
         this.snapping = false;
         if (this.refresh) {
@@ -91,7 +87,7 @@ class Camera {
             this.initCam();
             await this.camProd.snap();
         } catch (e) {
-            console.log('Could not snap image', e);
+            log.error('Could not take picture ' + e.message);
         }
         this.snapping = false;
     }
@@ -107,7 +103,6 @@ class Camera {
                 this.snapPreview();
             }
         }
-
     }
 
     async stopPreview() {

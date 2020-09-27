@@ -100,10 +100,9 @@ h2 {
     height: 180px
 }
 
-.thumbnail-box .thumbnail-text {
+/*.thumbnail-box .thumbnail-text {
     width: 88px;
-    float: left;
-}
+}*/
 
 .thumbnail-outer {
     margin: 10px;
@@ -147,4 +146,8 @@ i {
 
 .js-abort {
     display:none;
+}
+
+button.xsmall {
+    font-size:12px; height:25px; padding:3px;
 }

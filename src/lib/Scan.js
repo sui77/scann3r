@@ -1,5 +1,6 @@
 const {exec} = require('child_process');
 const Project = require('./Project.js');
+const fs = require('fs').promises;
 
 class Scan {
 
@@ -19,20 +20,20 @@ class Scan {
         let config = this.registry.get('config');
         this.config = config;
         this.currentProgress = {
-            photo: '-',
+            photo: '',
             text: '',
             percent: 0
         }
 
-        let rotorAngleFrom = config.get('rotorAngleRangeToScan.values')[0];
-        let rotorAngleTo = config.get('rotorAngleRangeToScan.values')[1];
+        this.rotorAngleFrom = config.get('rotorAngleRangeToScan.values')[0];
+        this.rotorAngleTo = config.get('rotorAngleRangeToScan.values')[1];
         let rotorAnglesPerScan = config.get('rotorAnglesPerScan.value');
         let imagesPerRevision = config.get('imagesPerRevision.value');
 
         this.turntableRangeMax = config.get('turntable.range.max');
 
-        this.rotorStart = rotorAngleFrom;
-        this.rotorSteps = Math.floor((rotorAngleTo - rotorAngleFrom) / rotorAnglesPerScan);
+        this.rotorStart = this.rotorAngleFrom;
+        this.rotorSteps = Math.floor((this.rotorAngleTo - this.rotorAngleFrom) / rotorAnglesPerScan);
         this.turntableSteps = Math.floor(this.turntableRangeMax / imagesPerRevision);
 
         this.rotorCurrent = 0;
@@ -46,6 +47,12 @@ class Scan {
 
     async start() {
         this.project = await Project.create(this.registry);
+        this.project.set('rotorCount', this.rotorCount+1);
+        this.project.set('turntableCount', this.turntableCount+1);
+        this.project.set('crop', JSON.stringify(this.cropValues));
+        this.project.set('range', this.rotorAngleFrom + "° .. " + this.rotorAngleTo + "°");
+
+
         this.progress({text: `Starting project #${this.project.id}.`});
 
         this.progress({text: `Moving rotor and turntable to start position.`});
@@ -117,9 +124,13 @@ class Scan {
     async zip() {
         this.progress({text: `Creating ZIP file.`});
         let filesToZip = this.project.getPath('cropped') + '*.jpg';
-        let zipFile = this.project.getPath() + 'images-' + this.project.id + '.zip';
+        let zipFile = this.project.getZipFileLocation();
         let cmd = `/usr/bin/zip -j ${zipFile} ${filesToZip}`;
-        return this._exec(cmd);
+        await this._exec(cmd);
+        console.log(zipFile);
+        let stats = await fs.stat( zipFile);
+        let size = stats.size;
+        this.project.set('zipSize', size);
     }
 
     async crop(filename) {

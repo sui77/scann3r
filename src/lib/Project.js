@@ -48,6 +48,7 @@ class Project {
         let id = await r.incrby('projectId', 1);
         await r.lpush('projects', id);
         await r.hset(`project:${id}`, 'id', id);
+        await r.hset(`project:${id}`, 'date', new Date().toISOString() );
         let p = new Project(id, registry);
         p.createFolder();
         return p;

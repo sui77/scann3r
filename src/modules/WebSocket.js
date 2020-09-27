@@ -1,6 +1,5 @@
 const socketIo = require('socket.io');
 const Scan = require('../lib/Scan.js');
-const fs = require('fs');
 const log = require('../lib/Log.js').createLogger({name: 'WebSocket'});
 const rimraf = require('rimraf');
 const Project = require('../lib/Project');
@@ -18,13 +17,13 @@ class WebSocket {
 
         this.sliderAction = {
             rotor: (type, value) => {
-                if (type == 'slide') {
+                if (type === 'slide') {
                     return;
                 }
                 this.registry.get('rotor').turnTo(value);
             },
             turntable: (type, value) => {
-                if (type == 'slide') {
+                if (type === 'slide') {
                     return;
                 }
                 this.registry.get('turntable').turnTo(value);
@@ -45,23 +44,24 @@ class WebSocket {
 
             light: (type, value) => {
                 this.registry.get('config').set('light.value', value);
-                this.registry.get('gpio').light1.write(((value == 1 || value == 2) * 1));
-                this.registry.get('gpio').light2.write((value == 2) * 1);
+                value = value * 1;
+                this.registry.get('gpio').light1.write(((value === 1 || value === 2) * 1));
+                this.registry.get('gpio').light2.write((value === 2) * 1);
             },
             imagesPerRevision: (type, value) => {
-                if (type == 'slide') {
+                if (type === 'slide') {
                     return;
                 }
                 this.registry.get('config').set('imagesPerRevision.value', value);
             },
             rotorAnglesPerScan: (type, value) => {
-                if (type == 'slide') {
+                if (type === 'slide') {
                     return;
                 }
                 this.registry.get('config').set('rotorAnglesPerScan.value', value);
             },
             rotorAngleRangeToScan: (type, value) => {
-                if (type == 'slide') {
+                if (type === 'slide') {
                     return;
                 }
                 this.registry.get('config').set('rotorAngleRangeToScan.values', value);
@@ -85,6 +85,14 @@ class WebSocket {
         this.registry.get('camera').onPreviewDone = (file) => {
             this.io.emit('updateCameraPreview', file);
         }
+
+        this.registry.get('proxy').onInfo = (msg) => {
+            this.io.emit('toast', {id: id, heading: heading, text: text, percent: percent});
+        }
+
+        this.registry.get('proxy').onRegistered = (data) => {
+            this.io.emit('proxy', data);
+        }
     }
 
 
@@ -103,7 +111,7 @@ class WebSocket {
                 socket.emit('initSlider', slider, options);
             }
 
-            console.log( this.config.get('version') );
+            console.log(this.config.get('version'));
             socket.emit('info', 'info-version', this.config.get('version'));
             socket.emit('imgArea', this.config.get('crop.values'));
             socket.emit('invert', this.config.get('rotor.invert'));
@@ -216,8 +224,9 @@ class WebSocket {
     }
 
     toast(id, heading, text, percent) {
-        this.io.emit('toast', {id: id, heading: heading, text: text, percent:percent} );
+        this.io.emit('toast', {id: id, heading: heading, text: text, percent: percent});
     }
+
     toastClose(id) {
         this.io.emit('toastClose', id);
     }

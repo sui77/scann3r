@@ -46,10 +46,10 @@ if (!fs.existsSync(configfile)) {
         registry.set('turntable', new Stepper(config.data.turntable, gpio.turntableStep, gpio.turntableDir, gpio.turntableEnable));
         registry.set('rotor', new Stepper(config.data.rotor, gpio.rotorStep, gpio.rotorDir, gpio.rotorEnable));
         registry.set('camera', new Camera(registry));
+        registry.set('proxy', new Proxy(registry));
         registry.set('webServer', new WebServer(registry));
         registry.set('webSocket', new WebSocket(registry));
         registry.set('notification', new Notification(registry));
-        registry.set('proxy', new Proxy(registry));
 
         log.info('Ready!');
     } catch(e) {

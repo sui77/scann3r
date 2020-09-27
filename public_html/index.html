@@ -14,7 +14,7 @@
     <script src="/js/jquery.ui.touch-punch.min.js"></script>
     <script src="/js/odyniec-imgareaselect/jquery.imgareaselect.js"></script>
     <script src="/js/jquery.toast.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.css" integrity="sha512-wJgJNTBBkLit7ymC6vvzM1EcSWeM9mmOu+1USHaRBbHkm6W9EgM0HY27+UtUaprntaYQJF75rc8gjxllKs5OIQ==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.css" integrity="sha512-wJgJNTBBkLit7ymC6vvzM1EcSWeM9mmOu+1USHaRBbHkm6W9EgM0HY27+UtUaprntaYQJF75rc8gjxllKs5OIQ==" crossorigin="anonymous"/>
 
     <script src="js/scann3r.js"></script>
 
@@ -49,16 +49,33 @@
 </div>
 
 <div class="container content" id="c-browse">
-    <div class="row" id="thumbs">
-        <div id="thumb-template" class="thumbnail-box">
-            <div class="thumbnail-outer">
-                <img class="thumbnail-image" src="/img/preview640x480.png">
+    <div class="row" id="thumbs" style="">
+        <div id="thumb-template" class="thumbnail-box" style="width:300px;height:430px">
+            <div class="thumbnail-outer" style="padding:0;border:solid 0px #0f0;">
+
+                <img style="width:280px; height:280px;margin-bottom:10px;" class="thumbnail-image" src="/img/preview640x480.png">
+                <div style="padding-left:10px;padding-right:10px;margin-top:-80px;color:#fff;background-color:#000;font-size:30px;position:absolute" class="thumbnail-text"></div>
+
+                <!--
                 <div class="thumbnail-text"></div>
+
                 <div class="thumbnail-icons">
                     <i class="trash feather-trash-2"></i>
                     <i class="cloud feather-upload-cloud"></i>
                     <a href="javascript:" class="resultZip"><i class="feather-download-cloud"></i></a>
                     <a href="javascript:" class="zip"><i class="zip feather-download"></i></a>
+                </div>
+-->
+                <div class="row">
+                    <div class="col-sm-5">
+                    <a href="javascript:" class="t-delete"><button class="xsmall primary" style="margin:0;margin-bottom:5px;width:100%;text-align:left;"><i class="feather-trash-2"></i> Delete</button></a>
+                    <a href="javascript:" class="t-download"><button class="xsmall primary" style="margin:0;margin-bottom:5px;width:100%;text-align:left;"><i class="feather-download"></i> Download ZIP</button></a>
+                    <a href="javascript:" class="t-cloud-up"><button class="xsmall primary" style="margin:0;margin-bottom:5px;width:100%;text-align:left;"><i class="feather-upload-cloud"></i> Cloud Upload</button></a>
+                    <a href="javascript:" class="t-cloud-down"><button class="xsmall tertiary" style="margin:0;margin-bottom:5px;width:100%;text-align:left;"><i class="feather-download-cloud"></i> Mesh</button></a>
+                    </div>
+                    <div class="col-sm-6">
+                        <ul class="infolist"></ul>
+                    </div>
                 </div>
             </div>
 

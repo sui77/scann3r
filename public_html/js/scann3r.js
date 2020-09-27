@@ -124,8 +124,8 @@ var Scann3r = {
             this.gallery.prepend(t1);
             $('#dialog-finished').html(t2)
                 .dialog({
-                    width: 250,
-                    height: 330
+                    width: 350,
+                    height: 550
                 });
         });
 
@@ -305,8 +305,7 @@ var Scann3r = {
                     }
                 }
             }
-    }
-    ,
+    },
 
     gallery: {
         init: (sio) => {
@@ -314,25 +313,34 @@ var Scann3r = {
             this.template = $('#thumb-template').clone();
             $('#thumb-template').remove();
         },
-        loadPage:
+        loadPage: function (page) {
+            let x = Scann3r.sio.emit('getProjects', 0, 100, (r) => {
+                for (let n in r) {
+                    this.append(this.createThumb(r[n]));
+                }
+            });
+        },
 
-            function (page) {
-                let x = Scann3r.sio.emit('getProjects', 0, 100, (r) => {
-                    for (let n in r) {
-                        this.append(this.createThumb(r[n]));
-                    }
-                });
-            }
 
-        ,
         createThumb: (data) => {
+            let humanReadableFilesize = (bytes) => {
+                if (bytes < 1024) {
+                    return bytes + ' bytes';
+                } else if (bytes < 1024 * 1024) {
+                    return (bytes / 1024).toFixed(1) + ' KB';
+                } else if (bytes < 1024 * 1024 * 1024) {
+                    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+                } else {
+                    return (bytes / 1024 / 1024 / 1024).toFixed(1) + ' GB';
+                }
+            };
+
+
             let t = this.template.clone();
             t.attr('id', 'foo');
             t.addClass('thumb-' + data.id);
-            t.find('.thumbnail-image').attr('src', data.thumb);
-            t.find('.thumbnail-text').text('#' + data.id);
-            t.find('.zip').attr('href', '/' + data.id + '/images-' + data.id + '.zip');
-            t.find('.trash').click(function () {
+
+            t.find('.t-delete').click(() => {
                 if (confirm('Are you sure?')) {
                     Scann3r.sio.emit('delete', data.id, (err, r) => {
                         if (err) {
@@ -344,7 +352,14 @@ var Scann3r = {
                 }
             });
 
-            t.find('.cloud').click(function () {
+            console.log(data);
+
+            t.find('.infolist').append(`<li>${data.rotorCount}x${data.turntableCount} Images</li>`);
+            t.find('.infolist').append(`<li>${humanReadableFilesize(data.zipSize)}</li>`);
+            t.find('.infolist').append(`<li>${data.range}</li>`);
+
+
+            t.find('.t-cloud-up').click(() => {
                 Scann3r.sio.emit('proxy', data.id, (err, r) => {
                     if (err) {
 
@@ -352,10 +367,17 @@ var Scann3r = {
                     }
                 });
             });
+
+
+            t.find('.thumbnail-image').attr('src', data.thumb);
+            t.find('.thumbnail-text').text('#' + data.id);
+            t.find('.t-download').attr('href', '/' + data.id + '/images-' + data.id + '.zip');
+
+
             if (typeof data.resultZip != 'undefined') {
-                t.find('.resultZip').attr('href', '/' + data.id + '/' + data.resultZip);
+                t.find('.t-cloud-down').attr('href', '/' + data.id + '/' + data.resultZip);
             } else {
-                t.find('.resultZip').hide();
+                t.find('.t-cloud-down').hide();
             }
             return t;
         },
