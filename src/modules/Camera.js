@@ -93,7 +93,7 @@ class Camera {
     }
 
     async startPreview() {
-        if (this.registry.get('scanning')) {
+        if (this.registry.get('currentScan') != null) {
             return;
         }
         if (!this.refresh && !this.snapping) {

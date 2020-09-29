@@ -42,6 +42,8 @@ class Scan {
         this.turntableCount = imagesPerRevision - 1;
 
         this.cropValues = config.get('crop.values');
+
+        this.bAbort = false;
     }
 
 
@@ -68,6 +70,7 @@ class Scan {
             await this.deleteImages('cropped');
             await this.deleteImages('original');
             this.progress({photo: '', text: `Finished scanning project #${this.project.id}.`});
+            this.project.set('complete', 1);
         } else {
             this.progress({photo: '', text: `Scan failed #${this.project.id}.`});
         }
@@ -76,12 +79,16 @@ class Scan {
     }
 
     checkAbort() {
-        if (this.registry.get('abort')) {
-            this.registry.set('abort', false);
+        if (this.bAbort) {
             this.progress({photo: '', text: 'Scan aborted.'});
             return true;
         }
         return false;
+    }
+
+    abort() {
+        this.progress({text: 'Aborting scan...'});
+        this.bAbort = true;
     }
 
     async next() {

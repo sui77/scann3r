@@ -100,21 +100,25 @@ class WebSocket {
         this.io.on('connection', async (socket) => {
 
             log.info(`Client connected from ${socket.handshake.address}`);
-            if (this.registry.get('scanning')) {
-                socket.emit('disableControls');
-            }
 
-            this.registry.get('camera').startPreview();
+            socket.on('ready', () => {
 
-            for (let slider in this.sliderAction) {
-                let options = this.config.get(slider);
-                socket.emit('initSlider', slider, options);
-            }
 
-            console.log(this.config.get('version'));
-            socket.emit('info', 'info-version', this.config.get('version'));
-            socket.emit('imgArea', this.config.get('crop.values'));
-            socket.emit('invert', this.config.get('rotor.invert'));
+                this.registry.get('camera').startPreview();
+
+                for (let slider in this.sliderAction) {
+                    let options = this.config.get(slider);
+                    socket.emit('initSlider', slider, options);
+                }
+
+                if (this.registry.get('currentScan') != null) {
+                    socket.emit('disableControls');
+                }
+
+                socket.emit('info', 'info-version', this.config.get('version'));
+                socket.emit('imgArea', this.config.get('crop.values'));
+                socket.emit('invert', this.config.get('rotor.invert'));
+            });
 
             socket.on('disconnect', () => {
                 log.info(`Client disconnected from ${socket.handshake.address}`);
@@ -150,23 +154,28 @@ class WebSocket {
             });
 
             socket.on('start', async () => {
-                this.io.emit('disableControls');
-                this.registry.set('abort', false);
-                this.registry.set('scanning', true);
-                let scan = new Scan(this.registry, this.io);
-                scan.onProgress = (data) => {
-                    this.io.emit('progress', data);
-                };
-                let project = await scan.start();
-                let projectData = await project.getAll();
-                this.io.emit('newProject', projectData);
-                this.io.emit('enableControls');
-                this.registry.set('scanning', false);
+                if (this.registry.get('currentScan') == null) {
+                    this.io.emit('disableControls');
+                    let scan = new Scan(this.registry, this.io);
+                    this.registry.set('currentScan', scan);
+                    scan.onProgress = (data) => {
+                        this.io.emit('progress', data);
+                    };
+                    let project = await scan.start();
+                    let projectData = await project.getAll();
+                    this.io.emit('newProject', projectData);
+                    this.io.emit('enableControls');
+                    this.registry.set('currentScan', null);
+                } else {
+
+                }
             });
 
             socket.on('abort', async () => {
-                console.log('ABORT');
-                this.registry.set('abort', true);
+                let scan = this.registry.get('currentScan');
+                if (scan !== null) {
+                    scan.abort();
+                }
             });
 
             socket.on('delete', async (id, cb) => {

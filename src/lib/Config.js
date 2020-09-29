@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const fs = require('fs');
-const log = require('../lib/Log.js').createLogger({name: 'Config'});
 
 class Config {
 
@@ -18,7 +17,6 @@ class Config {
                 _.set(this.data, n, JSON.parse(data[n]));
             }
         }
-
 
         let file = JSON.parse(fs.readFileSync('./package.json').toString());
         this.data.version = file.version;

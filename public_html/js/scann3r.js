@@ -1,4 +1,4 @@
-console.log(location.hash);
+
 var Scann3r = {
 
     sio: null,
@@ -12,6 +12,7 @@ var Scann3r = {
         this.gallery.init();
         this.gallery.loadPage(0);
         this.toasts = [];
+        this.sio.emit('ready');
     },
 
     showWebsocketError() {
@@ -67,10 +68,6 @@ var Scann3r = {
                 hideAfter: false,
                 loader: false,
                 sticky: true,
-                afterShown: () => {
-                    console.log('yup', $(this));
-
-                }
             }
 
             if (typeof this.toasts[data.id] != 'undefined') {
@@ -93,6 +90,10 @@ var Scann3r = {
         });
 
         this.sio.on('setSliderValue', (name, value) => {
+            if (! $('.slider[data-slider=' + name + ']').hasClass('ui-widget')) {
+                return; // not initialized yet
+            }
+
             let key = (typeof value == 'object') ? 'values' : 'value';
             $('.slider[data-slider=' + name + ']').slider(key, value);
         });
@@ -352,11 +353,13 @@ var Scann3r = {
                 }
             });
 
-            console.log(data);
-
-            t.find('.infolist').append(`<li>${data.rotorCount}x${data.turntableCount} Images</li>`);
-            t.find('.infolist').append(`<li>${humanReadableFilesize(data.zipSize)}</li>`);
-            t.find('.infolist').append(`<li>${data.range}</li>`);
+            if (data.complete) {
+                t.find('.infolist').append(`<li>${data.rotorCount}x${data.turntableCount} Images</li>`);
+                t.find('.infolist').append(`<li>${humanReadableFilesize(data.zipSize)}</li>`);
+                t.find('.infolist').append(`<li>${data.range}</li>`);
+            } else {
+                t.find('.infolist').append('<li>Aborted</li>');
+            }
 
 
             t.find('.t-cloud-up').click(() => {

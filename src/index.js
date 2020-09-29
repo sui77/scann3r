@@ -36,9 +36,10 @@ if (!fs.existsSync(configfile)) {
             rotorStep: new Gpio(config.data.rotor.step, 'out'),
             rotorDir: new Gpio(config.data.rotor.dir, 'out'),
             rotorEnable: new Gpio(config.data.rotor.enable, 'out'),
-        }
+        };
 
-        registry.set('scanning', false);
+
+        registry.set('currentScan', null);
         registry.set('config', config);
         registry.set('redis', Redis.createClient(config.data.redis));
         await config.loadDynamicValues();
