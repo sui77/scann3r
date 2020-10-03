@@ -1,4 +1,3 @@
-
 var Scann3r = {
 
     sio: null,
@@ -90,7 +89,7 @@ var Scann3r = {
         });
 
         this.sio.on('setSliderValue', (name, value) => {
-            if (! $('.slider[data-slider=' + name + ']').hasClass('ui-widget')) {
+            if (!$('.slider[data-slider=' + name + ']').hasClass('ui-widget')) {
                 return; // not initialized yet
             }
 
@@ -249,12 +248,15 @@ var Scann3r = {
         init: (name, options) => {
             options.name = name;
             let slider = $(`.slider[data-slider=${name}]`);
+            let type = (typeof options.type == 'undefined') ? 'setValue' : options.type;
+            console.log(options.type, options.range);
+            //console.log(options.type, type);
             let sliderOptions = {
                 min: options.range.min,
                 max: options.range.max,
                 range: (typeof options.values != 'undefined'),
-                slide: (event, ui) => Scann3r.slider.setValue(event, ui, name, options),
-                change: (event, ui) => Scann3r.slider.setValue(event, ui, name, options),
+                slide: (event, ui) => Scann3r.slider[type](event, ui, name, options),
+                change: (event, ui) => Scann3r.slider[type](event, ui, name, options),
             }
             if (typeof options.steps != 'undefined') {
                 options.step = options.step;
@@ -268,44 +270,76 @@ var Scann3r = {
                 slider.slider('value', options.value);
             }
         },
-        setValue:
 
-            function (event, ui, name, options) {
-
-                let displayValue = (val, formated) => {
-                    let displayValue = (val * (options.displayRange.max - options.displayRange.min) / (options.range.max - options.range.min));
-                    if (formated) {
-                        displayValue = displayValue.toFixed(options.displayDecimals ?? 0);
-                        displayValue += options.displaySuffix;
-                    }
-                    return displayValue;
-
-                }
-                if (typeof ui.values != 'undefined') { // range slider
-                    for (let index in ui.values) {
-                        $('#val-' + name + '-' + index).text(displayValue(ui.values[index], 1));
-                    }
-                } else {
-                    $('#val-' + name).text(displayValue(ui.value, 1));
-                }
-
-                if (name == 'rotor' || name == 'rotorAngleRangeToScan') {
-                    $('.os-ring-preview').show();
-                    $('.os-ring-preview').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
-                }
-
-                if (typeof event.originalEvent != 'undefined') {
-                    let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
-                    Scann3r.sio.emit('slider', event.type, name, value);
-                }
-                if (event.type == 'slidechange') {
-                    $('.os-ring-preview').hide();
-
-                    if (typeof event.originalEvent == 'undefined' && name == 'rotor') {
-                        $('.os-ring').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
-                    }
+        setValueSteps: function (event, ui, name, options) {
+            let numRanges = options.range.steps.length;
+            let subranges = Math.ceil(options.range.max / numRanges);
+            let subr = '';
+            for (let i = 1; i< numRanges; i++) {
+                if (ui.value <= i * subranges) {
+                    subrange = (i);
+                    break;
                 }
             }
+            let thisRange = {
+                min: options.range.steps[subrange-1],
+                max: options.range.steps[subrange]
+            }
+            thisval = 0;
+
+            let displayValue = (val, formated) => {
+                let displayValue = (val%subranges) ;
+                if (formated) {
+                    displayValue = displayValue.toFixed(options.displayDecimals ?? 0);
+                    displayValue += options.displaySuffix;
+                }
+                return displayValue;
+
+            }
+
+            $('#val-' + name).text(subr + " x  " + subrange + " " + displayValue(ui.value) + " x " +  ui.value);
+
+            if (typeof event.originalEvent != 'undefined') {
+                Scann3r.sio.emit('slider', event.type, name, ui.value);
+            }
+        },
+
+        setValue: function (event, ui, name, options) {
+
+            let displayValue = (val, formated) => {
+                let displayValue = (val * (options.displayRange.max - options.displayRange.min) / (options.range.max - options.range.min));
+                if (formated) {
+                    displayValue = displayValue.toFixed(options.displayDecimals ?? 0);
+                    displayValue += options.displaySuffix;
+                }
+                return displayValue;
+
+            }
+            if (typeof ui.values != 'undefined') { // range slider
+                for (let index in ui.values) {
+                    $('#val-' + name + '-' + index).text(displayValue(ui.values[index], 1));
+                }
+            } else {
+                $('#val-' + name).text(displayValue(ui.value, 1));
+            }
+
+            if (name == 'rotor' || name == 'rotorAngleRangeToScan') {
+                $('.os-ring-preview').show();
+                $('.os-ring-preview').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
+            }
+
+            if (typeof event.originalEvent != 'undefined') {
+                let value = typeof ui.values != 'undefined' ? ui.values : ui.value;
+                Scann3r.sio.emit('slider', event.type, name, value);
+            }
+            if (event.type == 'slidechange') {
+                $('.os-ring-preview').hide();
+
+                if (typeof event.originalEvent == 'undefined' && name == 'rotor') {
+                    $('.os-ring').css('transform', 'rotate(' + displayValue(ui.value) + 'deg)');
+                }
+            }
+        }
     },
 
     gallery: {

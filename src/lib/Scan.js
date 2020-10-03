@@ -134,7 +134,6 @@ class Scan {
         let zipFile = this.project.getZipFileLocation();
         let cmd = `/usr/bin/zip -j ${zipFile} ${filesToZip}`;
         await this._exec(cmd);
-        console.log(zipFile);
         let stats = await fs.stat( zipFile);
         let size = stats.size;
         this.project.set('zipSize', size);
