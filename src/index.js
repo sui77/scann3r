@@ -11,6 +11,9 @@ const path = require('path');
 const fs = require('fs');
 const Notification = require('./lib/Notification');
 
+var i2c = require('i2c-bus');
+var MPU6050 = require('i2c-mpu6050');
+
 const log = require('./lib/Log.js').createLogger({name: 'Main'});
 
 let gpio = {};
@@ -52,11 +55,32 @@ if (!fs.existsSync(configfile)) {
         registry.set('webSocket', new WebSocket(registry));
         registry.set('notification', new Notification(registry));
 
+
+        const i2c1 = i2c.openSync(3);
+        const sensor = new MPU6050(i2c1, 0x68);
+        const sensorValues = [];
+        setInterval(() => {
+            let data = sensor.readSync();
+            sensorValues.push( data.rotation.x );
+            if (sensorValues.length >=30) {
+                sensorValues.shift();
+            }
+            let sum = 0;
+            for (n = 0; n< sensorValues.length; n++) {
+                sum+= sensorValues[n];
+            }
+            let avg = sum / sensorValues.length;
+            data.rotation.x = avg;
+            //console.log(sensorValues.length, sensorValues);
+            registry.get('webSocket').gyro(data);
+        }, 100);
+
         log.info('Ready!');
-    } catch(e) {
+    } catch (e) {
         log.error('Error on startup: ' + e.message);
         console.log(e);
     }
+
 
 })();
 
@@ -73,6 +97,6 @@ process.on('SIGINT', _ => {
 });
 
 process.on('unhandledRejection', (reason, p) => {
-  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
-  // application specific logging, throwing an error, or other logic here
+    console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+    // application specific logging, throwing an error, or other logic here
 });

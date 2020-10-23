@@ -119,7 +119,16 @@
                         <div class="slider" data-slider="light"></div>
                     </div>
                     <div class="setting">
-                        <h2>Rotor (<a class="js-calibrate" href="javascript:">calibrate</a>): <span id="val-rotor"></span></h2>
+                        <h2>Rotor (<a class="js-calibrate" href="javascript:">calibrate</a>): berechnet: <span id="val-rotor"></span> gemessen: <span class="rotation-x"></span></h2>
+
+                        set:
+                        <a href="javascript:Scann3r.sio.emit('slider', 'change', 'rotor', Math.round(14000/114*0));">0</a>
+                        | <a href="javascript:Scann3r.sio.emit('slider', 'change', 'rotor', Math.round(14000/114*15));">15</a>
+                        | <a href="javascript:Scann3r.sio.emit('slider', 'change', 'rotor', Math.round(14000/114*45));">45</a>
+                        | <a href="javascript:Scann3r.sio.emit('slider', 'change', 'rotor', Math.round(14000/114*90));">90</a>
+                        | <a href="javascript:Scann3r.sio.emit('slider', 'change', 'rotor', Math.round(14000/114*120));">120</a>
+
+
                         <div class="slider" data-slider="rotor"></div>
                     </div>
                     <div class="setting">

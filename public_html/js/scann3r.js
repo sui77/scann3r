@@ -39,6 +39,13 @@ var Scann3r = {
             this.showWebsocketError();
         });
 
+        this.sio.on('gyro', (data)  => {
+            $('.rotation-x').html( data.rotation.x.toFixed(3) + "°" );
+            $('.rotation-y').html( data.rotation.y );
+            $('.rotation-z').html( data.rotation.z );
+
+        });
+
         this.sio.on('proxy', (data) => {
             $('.proxy-url').html(data.url);
             $('#dev-down').attr('href', data.url);
@@ -278,7 +285,7 @@ var Scann3r = {
                         displayValue = displayValue.toFixed(options.displayDecimals ?? 0);
                         displayValue += options.displaySuffix;
                     }
-                    return displayValue;
+                    return displayValue + " (" + val + ")";
 
                 }
                 if (typeof ui.values != 'undefined') { // range slider

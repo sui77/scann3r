@@ -239,6 +239,10 @@ class WebSocket {
     toastClose(id) {
         this.io.emit('toastClose', id);
     }
+
+    gyro(data) {
+        this.io.emit('gyro', data);
+    }
 }
 
 module.exports = WebSocket;
